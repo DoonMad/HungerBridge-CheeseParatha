@@ -25,6 +25,8 @@ class User(Base):
     latitude= Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
 
+    is_active = Column(Integer, default=0) # 1 only for volunteer
+
 class Listing(Base):
     __tablename__ = "listings"
 
@@ -46,6 +48,8 @@ class Listing(Base):
 
     donor = relationship("User",foreign_keys=[donor_id], back_populates="listings")
 
+    volunteer_id = Column(String, ForeignKey("users.id"), nullable=True)
+    volunteer = relationship("User", foreign_keys=[volunteer_id])
 
 class Rating(Base):
     __tablename__ = "ratings"
@@ -55,12 +59,27 @@ class Rating(Base):
     from_user_id = Column(String, ForeignKey("users.id"), nullable=False)
     to_user_id = Column(String, ForeignKey("users.id"),nullable=False)
 
-    listing_id = Column(String, ForeignKey("listings.id"))
+    listing_id = Column(String, ForeignKey("listings.id"), nullable=False)
 
     rating = Column(Integer,) # 1 to 5
     comment = Column(Text, nullable=True)
 
     created_at = Column(DateTime, default= datetime.utcnow)
+
+
+class NgoApplication(Base):
+    __tablename__ = "ngo_applications"
+
+    id = Column(String, primary_key=True, index=True, default=getuuid)
+
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    ngo_name = Column(String, nullable=False)
+    ngo_desc = Column(Text, nullable=True)
+
+    status = Column(String, default="pending") # pending, approved, rejected
+    applied_at = Column(DateTime, default= datetime.utcnow)
+
+    user = relationship("User", foreign_keys=[user_id])
 
 
 
