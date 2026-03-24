@@ -190,9 +190,26 @@ const DonorDashboard = () => {
               
               <div className="w-full md:w-auto text-left md:text-right shrink-0">
                 <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-1.5 md:mb-1">Live Status</p>
-                <div className="inline-flex items-center gap-2 flex-row-reverse md:flex-row bg-blue-50 text-blue-700 font-black px-4 py-2.5 rounded-xl border-2 border-blue-100 uppercase text-xs tracking-wider mb-2">
-                  <Navigation size={16} className="stroke-3" /> Waiting for NGO
-                </div>
+                {don.status === 'available' && (
+                  <div className="inline-flex items-center gap-2 flex-row-reverse md:flex-row bg-blue-50 text-blue-700 font-black px-4 py-2.5 rounded-xl border-2 border-blue-100 uppercase text-xs tracking-wider mb-2">
+                    <Navigation size={16} className="stroke-3" /> Waiting for NGO
+                  </div>
+                )}
+                {don.status === 'claimed' && (
+                  <div className="inline-flex items-center gap-2 flex-row-reverse md:flex-row bg-amber-50 text-amber-700 font-black px-4 py-2.5 rounded-xl border-2 border-amber-100 uppercase text-xs tracking-wider mb-2">
+                    <Package size={16} className="stroke-3" /> Claimed — Awaiting Volunteer
+                  </div>
+                )}
+                {don.status === 'volunteer_assigned' && (
+                  <div className="inline-flex items-center gap-2 flex-row-reverse md:flex-row bg-orange-50 text-orange-700 font-black px-4 py-2.5 rounded-xl border-2 border-orange-100 uppercase text-xs tracking-wider mb-2">
+                    <Navigation size={16} className="stroke-3 animate-pulse" /> Volunteer En Route
+                  </div>
+                )}
+                {don.status === 'completed' && (
+                  <div className="inline-flex items-center gap-2 flex-row-reverse md:flex-row bg-emerald-50 text-emerald-700 font-black px-4 py-2.5 rounded-xl border-2 border-emerald-100 uppercase text-xs tracking-wider mb-2">
+                    <Clock size={16} className="stroke-3" /> Delivered ✓
+                  </div>
+                )}
                 {don.weather_data && don.weather_data.source !== 'fallback' && (
                   <p className="text-xs text-gray-500 font-bold block">
                     🌡️ {don.weather_data.temperature_c}°C / {don.weather_data.sun_exposure} Sun
