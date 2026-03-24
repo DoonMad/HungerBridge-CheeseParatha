@@ -11,6 +11,85 @@ from pydantic import BaseModel
 import urllib.request
 import json
 from datetime import datetime, timezone
+from AI_Pipeline.food_safe_time_prediction.llm_food_resolver import resolve_food_metadata
+import google.generativeai as genai
+import json
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+model = genai.GenerativeModel("gemini-2.5-flash")
+
+BASE_SAFE_TIME_MAP ={
+    "rice_meal": 120,
+    "biryani": 115,
+    "fried_rice": 125,
+    "dry_food_roti": 180,
+    "bread_items": 170,
+    "fried_snacks": 140,
+    "samosa_kachori": 135,
+    "curry_gravy": 100,
+    "dal": 110,
+    "paneer_dish": 95,
+    "chicken_curry": 90,
+    "fish_curry": 80,
+    "noodles": 110,
+    "pasta": 105,
+    "dairy_sweets": 60,
+    "milk_based_dessert": 55,
+    "salad_cut_fruits": 70,
+    "raw_vegetable_salad": 75,
+    "bakery_cake": 85,
+    "pizza": 95
+}
+
+def resolve_food_metadata(food_name: str):
+    """
+    Returns:
+        {
+            base_safe_time: int,
+            category: str,
+            risk_level: str
+        }
+    """
+
+    key = food_name.lower().replace(" ", "_")
+
+    if key in BASE_SAFE_TIME_MAP:
+        return {
+            "base_safe_time": BASE_SAFE_TIME_MAP[key],
+        }
+
+    prompt = f"""
+    You are a food safety assistant.
+
+    For the food item: "{food_name}"
+
+    Estimate:
+    1. Safe consumption window in minutes if kept at room temperature in India.
+
+    Respond ONLY in JSON format like:
+    {{
+        "base_safe_time": 90
+    }}
+    """
+
+    response = model.generate_content(prompt)
+
+    try:
+        text = response.text.strip()
+        json_start = text.find("{")
+        json_data = json.loads(text[json_start:])
+        return json_data
+
+    except Exception:
+        return {
+            "base_safe_time": 90
+        }
+
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AI_DIR = os.path.join(BASE_DIR, "AI_Pipeline", "food_safe_time_prediction")
@@ -90,10 +169,19 @@ def get_risk_label(minutes):
 
 @app.post("/predict-spoilage")
 def predict_spoilage(data: schemas.SpoilageRequest):
+
+    meta = resolve_food_metadata(data.food_type)
+
+    base_time = meta["base_safe_time"]
+
     df = pd.DataFrame([data.model_dump()])
+
+    df["base_safe_time"] = base_time
+
     for col, le in encoders.items():
         if col in df.columns:
             val = df[col].iloc[0]
+
             if val not in le.classes_:
                 matched = False
                 for cls in le.classes_:
@@ -101,13 +189,19 @@ def predict_spoilage(data: schemas.SpoilageRequest):
                         df.loc[0, col] = cls
                         matched = True
                         break
+
                 if not matched:
                     df.loc[0, col] = le.classes_[0]
+
             df[col] = le.transform(df[col])
+
     pred = model.predict(df)[0]
+
     return {
         "predicted_safe_minutes": round(float(pred), 2),
-        "risk_level": get_risk_label(pred)
+        "risk_level": get_risk_label(pred),
+        "base_time_used": base_time,
+        "base_time_source": meta["source"]
     }
 
 def get_weather_and_sun(lat: float, lon: float):
