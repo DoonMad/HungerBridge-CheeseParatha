@@ -37,7 +37,7 @@ const Listings = () => {
             requiresRefrigeration: l.refrigeration || false,
             time_since_cooked_min: 0,
             distance: 1.5,
-            location: 'Local Center',
+            location: l.pickup_location || 'Donor Location',
             expiresAt: expiresStr,
           };
       });
@@ -76,12 +76,17 @@ const Listings = () => {
     setSelectedListing(listing);
   };
   
-  const handleConfirmClaim = async (id, deliveryMethod) => {
+  const handleConfirmClaim = async (id, deliveryMethod, dropoffAddress) => {
     try {
       const ngoId = user?.id || 'demo-ngo';
       const isSelfPickup = deliveryMethod === 'self';
       
-      await fetch(`${API_URL}/${id}/ngo-claim?ngo_id=${ngoId}&self_pickup=${isSelfPickup}`, { method: 'POST' });
+      let url = `${API_URL}/${id}/ngo-claim?ngo_id=${ngoId}&self_pickup=${isSelfPickup}`;
+      if (!isSelfPickup && dropoffAddress) {
+        url += `&dropoff_location=${encodeURIComponent(dropoffAddress)}`;
+      }
+      
+      await fetch(url, { method: 'POST' });
       setListings(prev => prev.filter(l => l.id !== id));
       setShowClaimSuccess(true);
       setTimeout(() => setShowClaimSuccess(false), 4000);

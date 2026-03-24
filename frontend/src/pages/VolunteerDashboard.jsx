@@ -7,6 +7,7 @@ const VolunteerDashboard = () => {
   const [isActive, setIsActive] = useState(false);
   const [activeJob, setActiveJob] = useState(null);
   const [jobs, setJobs] = useState([]);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -23,9 +24,9 @@ const VolunteerDashboard = () => {
             return {
               id: l.id,
               food: l.food_name,
-              pickup: 'Donor Location (Map feature coming soon)',
+              pickup: l.pickup_location || 'Donor Location',
               pickupDistance: 1.2,
-              dropoff: 'NGO Location (Map feature coming soon)',
+              dropoff: l.dropoff_location || 'NGO Location',
               dropoffDistance: 3.4,
               totalPay: 'Impact Points: 150',
               status: l.status,
@@ -42,9 +43,9 @@ const VolunteerDashboard = () => {
             setActiveJob({
               id: current.id,
               food: current.food_name,
-              pickup: 'Donor Location',
+              pickup: current.pickup_location || 'Donor Location',
               pickupDistance: 1.2,
-              dropoff: 'NGO Location',
+              dropoff: current.dropoff_location || 'NGO Location',
               dropoffDistance: 3.4,
               totalPay: 'Impact Points: 150',
               status: current.status,
@@ -82,6 +83,7 @@ const VolunteerDashboard = () => {
   };
 
   const handleCompleteJob = async () => {
+    setIsCompleting(true);
     try {
       const res = await fetch(`http://localhost:8000/api/listings/${activeJob.id}/complete`, { method: 'POST' });
       if (res.ok) {
@@ -90,6 +92,8 @@ const VolunteerDashboard = () => {
       }
     } catch(e) {
       console.error(e);
+    } finally {
+      setIsCompleting(false);
     }
   };
 
@@ -148,30 +152,33 @@ const VolunteerDashboard = () => {
                 </div>
 
                 <div className="relative pl-6 space-y-8 py-2 before:absolute before:inset-y-0 before:left-[23px] before:w-0.5 before:bg-gray-200">
-                  <div className="relative">
-                    <div className="absolute -left-[32px] bg-white p-1 rounded-full border-2 border-orange-500 z-10 shadow-sm">
-                      <div className="w-2.5 h-2.5 bg-orange-500 rounded-full"></div>
+                  <div className="flex items-start gap-4">
+                    <div className="bg-orange-100 p-3 rounded-full text-orange-600 mt-1 shrink-0"><MapPin size={24} /></div>
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 tracking-wider uppercase mb-1">Pick up from Donor</p>
+                      <p className="font-bold text-gray-900 text-lg leading-tight">{activeJob.pickup}</p>
+                      <p className="text-sm text-gray-500 mt-0.5">{activeJob.pickupDistance} km • Ready now</p>
                     </div>
-                    <h4 className="font-bold text-sm text-gray-400 uppercase tracking-wider mb-1">Pickup (Donor)</h4>
-                    <p className="text-gray-900 font-bold text-lg mb-1">{activeJob.pickup}</p>
-                    <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md">{activeJob.pickupDistance} km</span>
                   </div>
-                  <div className="relative">
-                    <div className="absolute -left-[32px] bg-white p-1 rounded-full border-2 border-emerald-500 z-10 shadow-sm">
-                      <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full"></div>
+              
+                  {/* Dropoff */}
+                  <div className="flex items-start gap-4">
+                    <div className="bg-emerald-100 p-3 rounded-full text-emerald-600 mt-1 shrink-0"><Navigation size={24} /></div>
+                    <div>
+                      <p className="text-xs font-bold text-gray-400 tracking-wider uppercase mb-1">Deliver to NGO</p>
+                      <p className="font-bold text-gray-900 text-lg leading-tight">{activeJob.dropoff}</p>
+                      <p className="text-sm text-gray-500 mt-0.5">{activeJob.dropoffDistance} km • Signature Required</p>
                     </div>
-                    <h4 className="font-bold text-sm text-gray-400 uppercase tracking-wider mb-1">Dropoff (NGO)</h4>
-                    <p className="text-gray-900 font-bold text-lg mb-1">{activeJob.dropoff}</p>
-                    <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md">{activeJob.dropoffDistance} km</span>
                   </div>
                 </div>
 
-                <button
+                <button 
                   onClick={handleCompleteJob}
-                  className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bold shadow-lg shadow-emerald-500/20 active:scale-95 transition-all text-lg flex items-center justify-center gap-2"
+                  disabled={isCompleting}
+                  className="w-full bg-gray-900 hover:bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-70"
                 >
-                  <CheckCircle size={22} className="stroke-2" />
-                  Mark Delivery Complete
+                  <CheckCircle size={20} />
+                  {isCompleting ? 'Completing...' : 'Mark Delivery Complete'}
                 </button>
               </div>
             </div>

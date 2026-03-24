@@ -91,6 +91,7 @@ const DonorDashboard = () => {
         body: JSON.stringify({
           donor_id: user?.id || 'demo-donor',
           food_name: data.food_name,
+          pickup_location: data.pickup_location,
           food_desc: 'Added from ML Flow',
           food_qty: parseInt(data.quantity_kg),
           food_type: data.food_type,

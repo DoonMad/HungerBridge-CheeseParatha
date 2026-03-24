@@ -43,10 +43,20 @@ const AddListingModal = ({ isOpen, onClose, onSubmit }) => {
     // Request permission and capture real-time geodata
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
-          onSubmit({ ...formData, latitude: lat, longitude: lon });
+          // Reverse geocode to get a readable address
+          let pickup_location = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+          try {
+            const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+            if (geoRes.ok) {
+              const geoData = await geoRes.json();
+              const a = geoData.address;
+              pickup_location = [a.road, a.neighbourhood, a.suburb, a.city || a.town || a.village].filter(Boolean).join(', ') || geoData.display_name;
+            }
+          } catch (e) { console.warn('Reverse geocode failed, using coords', e); }
+          onSubmit({ ...formData, latitude: lat, longitude: lon, pickup_location });
           setIsClassifying(false);
           resetForm();
         },

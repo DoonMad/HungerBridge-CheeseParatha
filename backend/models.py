@@ -81,6 +81,9 @@ class Listing(Base):
     created_at = Column(DateTime, default= datetime.utcnow)
     expires_at = Column(DateTime, nullable=False)  
 
+    pickup_location = Column(String, server_default="Unknown Location")
+    dropoff_location = Column(String, nullable=True)
+
     status = Column(String, default="available") # available, claimed, expired    
     claimed_by = Column(String, ForeignKey("users.id"), nullable=True)
     base_time = Column(Integer, default=0) 

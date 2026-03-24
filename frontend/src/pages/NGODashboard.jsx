@@ -17,7 +17,7 @@ const NGODashboard = () => {
           setClaims(data.map(l => ({
             id: l.id,
             food: l.food_name,
-            donor: 'Donor Location',
+            donor: l.pickup_location || 'Donor Location',
             volunteer: l.volunteer_id ? `Volunteer Active` : 'Awaiting Assignment',
             status: l.status,
             date: new Date(l.created_at.endsWith('Z') ? l.created_at : l.created_at + 'Z').toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),

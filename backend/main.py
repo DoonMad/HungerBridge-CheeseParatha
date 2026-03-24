@@ -125,7 +125,7 @@ def create_listing(listing: schemas.ListingCreate, db: Session = Depends(get_db)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/listings/{listing_id}/ngo-claim")
-def ngo_claim_listing(listing_id: str, ngo_id: str, self_pickup: bool = False, db: Session = Depends(get_db)):
+def ngo_claim_listing(listing_id: str, ngo_id: str, self_pickup: bool = False, dropoff_location: str = None, db: Session = Depends(get_db)):
     listing = db.query(models.Listing).filter(models.Listing.id == listing_id).first()
     if not listing:
         raise HTTPException(status_code=404, detail="Listing not found")
@@ -134,6 +134,8 @@ def ngo_claim_listing(listing_id: str, ngo_id: str, self_pickup: bool = False, d
     
     listing.status = "completed" if self_pickup else "claimed"
     listing.claimed_by = ngo_id
+    if dropoff_location:
+        listing.dropoff_location = dropoff_location
     db.commit()
     db.refresh(listing)
     return {"message": "Listing claimed by NGO", "listing": listing.id}
