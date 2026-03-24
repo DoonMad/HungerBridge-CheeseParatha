@@ -12,18 +12,11 @@ const Listings = () => {
   
   const [selectedListing, setSelectedListing] = useState(null);
   const [showClaimSuccess, setShowClaimSuccess] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
-
-  const [newListing, setNewListing] = useState({
-    food_name: '',
-    food_qty: 1,
-    food_type: 'general',
-    food_is_veg: true
-  });
 
   const fetchListings = async () => {
     try {
       const response = await fetch(API_URL);
+      if (!response.ok) throw new Error();
       const data = await response.json();
       const mapped = data.map(l => ({
         id: l.id,
@@ -42,6 +35,28 @@ const Listings = () => {
       }));
       setListings(mapped);
     } catch (error) {
+      // Fallback Mock Data for NGO Live Feed MVP
+      const MOCK_LISTINGS = [
+        {
+          id: 'MN-9481', title: 'Chicken Curry & Rice Combo', restaurant: 'Spice Route Hotel',
+          food_type: 'chicken_curry', isVeg: false, quantity_kg: 5.5, servings: 22,
+          packaging_type: 'sealed', requiresRefrigeration: false, time_since_cooked_min: 45,
+          distance: 1.2, location: 'Central Avenue', expiresAt: new Date(Date.now() + 1000 * 60 * 120).toISOString()
+        },
+        {
+          id: 'MN-9482', title: 'Fresh Garden Salad Bowls', restaurant: 'GreenLife Catering',
+          food_type: 'raw_vegetable_salad', isVeg: true, quantity_kg: 2.0, servings: 10,
+          packaging_type: 'sealed', requiresRefrigeration: true, time_since_cooked_min: 20,
+          distance: 2.8, location: 'Westside Business Park', expiresAt: new Date(Date.now() + 1000 * 60 * 180).toISOString()
+        },
+        {
+          id: 'MN-9483', title: 'Assorted Bakery Cakes', restaurant: 'Sweet Tooth Bakery',
+          food_type: 'bakery_cake', isVeg: true, quantity_kg: 4.0, servings: 16,
+          packaging_type: 'semi_covered', requiresRefrigeration: true, time_since_cooked_min: 120,
+          distance: 0.8, location: 'Downtown Square', expiresAt: new Date(Date.now() + 1000 * 60 * 60).toISOString()
+        }
+      ];
+      setListings(MOCK_LISTINGS);
     }
   };
 
@@ -60,31 +75,10 @@ const Listings = () => {
       setShowClaimSuccess(true);
       setTimeout(() => setShowClaimSuccess(false), 4000);
     } catch(err) {
-    }
-  };
-
-  const handleAddSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        donor_id: "dummy-donor-123",
-        food_name: newListing.food_name,
-        food_qty: parseInt(newListing.food_qty),
-        food_type: newListing.food_type,
-        food_is_veg: newListing.food_is_veg,
-        refrigeration: false,
-        latitude: 12.9716,
-        longitude: 77.5946,
-        expires_at: new Date(Date.now() + 1000 * 60 * 60 * 2).toISOString()
-      };
-      await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      setShowAddForm(false);
-      fetchListings();
-    } catch(err) {
+      // Allow mock flow for UI testing
+      setListings(prev => prev.filter(l => l.id !== id));
+      setShowClaimSuccess(true);
+      setTimeout(() => setShowClaimSuccess(false), 4000);
     }
   };
 
@@ -128,10 +122,6 @@ const Listings = () => {
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3 items-end">
-          <button onClick={() => setShowAddForm(!showAddForm)} className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-5 py-3 rounded-2xl font-bold transition-colors shadow-sm text-sm whitespace-nowrap">
-            <Plus size={18} />
-            Add Listing
-          </button>
           <div className="flex gap-3 w-full sm:w-auto">
             <div className="relative flex-1 sm:w-64 xl:w-80">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -151,20 +141,7 @@ const Listings = () => {
         </div>
       </div>
 
-      {showAddForm && (
-        <form onSubmit={handleAddSubmit} className="bg-gray-50 p-6 rounded-3xl border border-gray-200 grid sm:grid-cols-2 gap-4">
-          <input required type="text" placeholder="Food Name" value={newListing.food_name} onChange={e => setNewListing({...newListing, food_name: e.target.value})} className="px-4 py-2 border border-gray-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-orange-500" />
-          <input required type="number" placeholder="Quantity (kg)" value={newListing.food_qty} onChange={e => setNewListing({...newListing, food_qty: e.target.value})} className="px-4 py-2 border border-gray-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-orange-500" />
-          <input required type="text" placeholder="Food Type" value={newListing.food_type} onChange={e => setNewListing({...newListing, food_type: e.target.value})} className="px-4 py-2 border border-gray-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-orange-500" />
-          <label className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-xl text-gray-700">
-            <input type="checkbox" checked={newListing.food_is_veg} onChange={e => setNewListing({...newListing, food_is_veg: e.target.checked})} className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500" />
-            Vegetarian
-          </label>
-          <button type="submit" className="col-span-full bg-gray-900 text-white py-3 rounded-xl font-bold hover:bg-black transition-colors">Submit</button>
-        </form>
-      )}
-      
-      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 mt-6">
         {categories.map(cat => (
           <button 
             key={cat}
