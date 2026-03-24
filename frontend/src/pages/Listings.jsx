@@ -76,7 +76,7 @@ const Listings = () => {
     setSelectedListing(listing);
   };
   
-  const handleConfirmClaim = async (id, deliveryMethod, dropoffAddress) => {
+  const handleConfirmClaim = async (id, deliveryMethod, dropoffAddress, dropoffLat, dropoffLng) => {
     try {
       const ngoId = user?.id || 'demo-ngo';
       const isSelfPickup = deliveryMethod === 'self';
@@ -84,6 +84,9 @@ const Listings = () => {
       let url = `${API_URL}/${id}/ngo-claim?ngo_id=${ngoId}&self_pickup=${isSelfPickup}`;
       if (!isSelfPickup && dropoffAddress) {
         url += `&dropoff_location=${encodeURIComponent(dropoffAddress)}`;
+        if (dropoffLat && dropoffLng) {
+           url += `&dropoff_lat=${dropoffLat}&dropoff_lng=${dropoffLng}`;
+        }
       }
       
       await fetch(url, { method: 'POST' });

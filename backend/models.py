@@ -83,6 +83,8 @@ class Listing(Base):
 
     pickup_location = Column(String, server_default="Unknown Location")
     dropoff_location = Column(String, nullable=True)
+    dropoff_lat = Column(Float, nullable=True)
+    dropoff_lng = Column(Float, nullable=True)
     image_url = Column(String, nullable=True)
 
     status = Column(String, default="available") # available, claimed, expired    

@@ -99,7 +99,8 @@ const DonorDashboard = () => {
           refrigeration: data.refrigerated,
           latitude: data.latitude,
           longitude: data.longitude,
-          expires_at: expiresAt
+          expires_at: expiresAt,
+          image_url: data.image_url
         })
       });
 
@@ -168,12 +169,17 @@ const DonorDashboard = () => {
           </h2>
           {activeDonations.map(don => (
             <div key={don.id} className="bg-white p-6 md:p-8 rounded-3xl border-2 border-orange-100 shadow-sm hover:shadow-orange-100/50 transition-shadow flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="font-extrabold text-gray-900 text-xl md:text-2xl">{don.food_name}</h3>
-                  <span className="bg-orange-50 text-orange-700 text-xs font-bold px-2 py-1 rounded-md border border-orange-100 uppercase tracking-wider">{don.id}</span>
+              <div className="flex gap-5 items-center">
+                {don.image_url && (
+                  <img src={`http://localhost:8000${don.image_url}`} alt={don.food_name} className="w-20 h-20 rounded-2xl object-cover shadow-sm border border-gray-100" />
+                )}
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="font-extrabold text-gray-900 text-xl md:text-2xl">{don.food_name}</h3>
+                    <span className="bg-orange-50 text-orange-700 text-xs font-bold px-2 py-1 rounded-md border border-orange-100 uppercase tracking-wider">{don.id}</span>
+                  </div>
+                  <p className="text-sm font-bold text-gray-500 capitalize">{don.food_type} • {don.quantity_kg} kg available</p>
                 </div>
-                <p className="text-sm font-bold text-gray-500 capitalize">{don.food_type} • {don.quantity_kg} kg available</p>
               </div>
               
               <div className="flex gap-4 items-center bg-gray-50 px-5 py-4 rounded-2xl border border-gray-100 w-full md:w-auto shrink-0 shadow-inner">

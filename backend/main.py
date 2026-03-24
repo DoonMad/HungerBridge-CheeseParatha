@@ -145,8 +145,10 @@ def create_listing(listing: schemas.ListingCreate, db: Session = Depends(get_db)
         print(f"Error creating listing: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+from typing import Optional
+
 @app.post("/api/listings/{listing_id}/ngo-claim")
-def ngo_claim_listing(listing_id: str, ngo_id: str, self_pickup: bool = False, dropoff_location: str = None, db: Session = Depends(get_db)):
+def ngo_claim_listing(listing_id: str, ngo_id: str, self_pickup: bool = False, dropoff_location: str = None, dropoff_lat: Optional[float] = None, dropoff_lng: Optional[float] = None, db: Session = Depends(get_db)):
     listing = db.query(models.Listing).filter(models.Listing.id == listing_id).first()
     if not listing:
         raise HTTPException(status_code=404, detail="Listing not found")
@@ -157,6 +159,9 @@ def ngo_claim_listing(listing_id: str, ngo_id: str, self_pickup: bool = False, d
     listing.claimed_by = ngo_id
     if dropoff_location:
         listing.dropoff_location = dropoff_location
+        if dropoff_lat is not None and dropoff_lng is not None:
+            listing.dropoff_lat = dropoff_lat
+            listing.dropoff_lng = dropoff_lng
     db.commit()
     db.refresh(listing)
     return {"message": "Listing claimed by NGO", "listing": listing.id}

@@ -60,6 +60,8 @@ const VolunteerDashboard = () => {
               status: current.status,
               lat: current.latitude,
               lng: current.longitude,
+              dropoff_lat: current.dropoff_lat,
+              dropoff_lng: current.dropoff_lng,
               expiresIn: Math.max(0, Math.floor((new Date(exp) - new Date()) / 60000)) + ' mins'
             });
           } else {
@@ -151,7 +153,16 @@ const VolunteerDashboard = () => {
               </div>
               
               <div className="relative h-64 w-full bg-gray-100 z-0 border-b border-gray-100">
-                <MapContainer center={[activeJob.lat, activeJob.lng]} zoom={15} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }}>
+                {activeJob.lat && activeJob.lng && (
+                  <MapContainer 
+                    bounds={
+                      activeJob.dropoff_lat 
+                        ? [[activeJob.lat, activeJob.lng], [activeJob.dropoff_lat, activeJob.dropoff_lng]] 
+                        : [[activeJob.lat, activeJob.lng], [activeJob.lat, activeJob.lng]]
+                    } 
+                    scrollWheelZoom={false} 
+                    style={{ height: "100%", width: "100%" }}
+                  >
                   <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -161,7 +172,15 @@ const VolunteerDashboard = () => {
                       <b>Donor Pickup Point</b><br/>{activeJob.pickup}
                     </Popup>
                   </Marker>
+                  {activeJob.dropoff_lat && activeJob.dropoff_lng && (
+                    <Marker position={[activeJob.dropoff_lat, activeJob.dropoff_lng]}>
+                      <Popup>
+                        <b>NGO Drop-off Point</b><br/>{activeJob.dropoff}
+                      </Popup>
+                    </Marker>
+                  )}
                 </MapContainer>
+              )}
               </div>
 
               <div className="p-6 md:p-8 space-y-8">

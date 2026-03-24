@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 const ClaimModal = ({ isOpen, onClose, listing, onConfirm }) => {
   const [deliveryMethod, setDeliveryMethod] = useState('self');
   const [dropoffAddress, setDropoffAddress] = useState('');
+  const [dropoffLat, setDropoffLat] = useState(null);
+  const [dropoffLng, setDropoffLng] = useState(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
   
@@ -19,6 +21,8 @@ const ClaimModal = ({ isOpen, onClose, listing, onConfirm }) => {
           async (position) => {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
+            setDropoffLat(lat);
+            setDropoffLng(lon);
             let address = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
             try {
               const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
@@ -55,7 +59,7 @@ const ClaimModal = ({ isOpen, onClose, listing, onConfirm }) => {
     
     // Simulate backend processing
     setTimeout(() => {
-      onConfirm(listing.id, deliveryMethod, dropoffAddress);
+      onConfirm(listing.id, deliveryMethod, dropoffAddress, dropoffLat, dropoffLng);
       setIsConfirming(false);
       onClose();
     }, 1000);

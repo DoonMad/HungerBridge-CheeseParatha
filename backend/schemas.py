@@ -62,6 +62,8 @@ class ListingResponse(ListingBase):
     volunteer_id: Optional[str] = None
     created_at: datetime
     dropoff_location: Optional[str] = None
+    dropoff_lat: Optional[float] = None
+    dropoff_lng: Optional[float] = None
     image_url: Optional[str] = None
 
 
