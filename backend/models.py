@@ -1,0 +1,66 @@
+from __future__ import annotations
+
+from database import Base 
+from sqlalchemy import Column, Integer, String , Float, ForeignKey, DateTime, Text
+from sqlalchemy.orm import relationship
+
+from datetime import datetime
+
+from utils import getuuid 
+
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(String, primary_key=True, index=True, default=getuuid)
+    name  = Column(String, index=True)
+    role = Column(String, index=True) # donot ya ngo ya volunteer
+
+    joined_at = Column(DateTime, default= datetime.utcnow)
+
+    listings = relationship("Listing", back_populates="donor", 
+                            foreign_keys="Listing.donor_id")
+    
+    latitude= Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+
+class Listing(Base):
+    __tablename__ = "listings"
+
+    id = Column(String, primary_key=True, index=True, default=getuuid)
+
+    donor_id = Column(String, ForeignKey("users.id"), nullable=False)
+
+    food_name = Column(String, nullable=False)
+    food_desc = Column(String, nullable=True)
+    food_qty = Column(Integer, nullable=False)
+
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    created_at = Column(DateTime, default= datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False)  
+
+    status = Column(String, default="available") # available, claimed, expired    
+    claimed_by = Column(String, ForeignKey("users.id"), nullable=True)
+
+    donor = relationship("User",foreign_keys=[donor_id], back_populates="listings")
+
+
+class Rating(Base):
+    __tablename__ = "ratings"
+
+    id = Column(String, primary_key=True, index=True, default=getuuid)
+
+    from_user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    to_user_id = Column(String, ForeignKey("users.id"),nullable=False)
+
+    listing_id = Column(String, ForeignKey("listings.id"))
+
+    rating = Column(Integer,) # 1 to 5
+    comment = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, default= datetime.utcnow)
+
+
+
