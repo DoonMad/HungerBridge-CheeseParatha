@@ -7,3 +7,5 @@ lightgbm
 fastapi
 uvicorn
 pydantic
+google-genai
+langchain
