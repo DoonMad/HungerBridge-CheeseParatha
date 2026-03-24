@@ -36,7 +36,7 @@ const Listings = () => {
             packaging_type: 'sealed',
             requiresRefrigeration: l.refrigeration || false,
             time_since_cooked_min: 0,
-            distance: 1.5,
+            distance: 'Nearby',
             location: l.pickup_location || 'Donor Location',
             expiresAt: expiresStr,
           };

@@ -25,9 +25,7 @@ const VolunteerDashboard = () => {
               id: l.id,
               food: l.food_name,
               pickup: l.pickup_location || 'Donor Location',
-              pickupDistance: 1.2,
               dropoff: l.dropoff_location || 'NGO Location',
-              dropoffDistance: 3.4,
               totalPay: 'Impact Points: 150',
               status: l.status,
               expiresIn: Math.max(0, Math.floor((new Date(exp) - new Date()) / 60000)) + ' mins'
@@ -44,9 +42,7 @@ const VolunteerDashboard = () => {
               id: current.id,
               food: current.food_name,
               pickup: current.pickup_location || 'Donor Location',
-              pickupDistance: 1.2,
               dropoff: current.dropoff_location || 'NGO Location',
-              dropoffDistance: 3.4,
               totalPay: 'Impact Points: 150',
               status: current.status,
               expiresIn: Math.max(0, Math.floor((new Date(exp) - new Date()) / 60000)) + ' mins'
@@ -157,7 +153,7 @@ const VolunteerDashboard = () => {
                     <div>
                       <p className="text-xs font-bold text-gray-400 tracking-wider uppercase mb-1">Pick up from Donor</p>
                       <p className="font-bold text-gray-900 text-lg leading-tight">{activeJob.pickup}</p>
-                      <p className="text-sm text-gray-500 mt-0.5">{activeJob.pickupDistance} km • Ready now</p>
+                      <p className="text-sm text-gray-500 mt-0.5">Nearby • Ready now</p>
                     </div>
                   </div>
               
@@ -167,7 +163,7 @@ const VolunteerDashboard = () => {
                     <div>
                       <p className="text-xs font-bold text-gray-400 tracking-wider uppercase mb-1">Deliver to NGO</p>
                       <p className="font-bold text-gray-900 text-lg leading-tight">{activeJob.dropoff}</p>
-                      <p className="text-sm text-gray-500 mt-0.5">{activeJob.dropoffDistance} km • Signature Required</p>
+                      <p className="text-sm text-gray-500 mt-0.5">Nearby • Signature Required</p>
                     </div>
                   </div>
                 </div>

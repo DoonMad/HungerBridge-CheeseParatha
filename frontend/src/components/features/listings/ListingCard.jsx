@@ -86,7 +86,7 @@ const ListingCard = ({ listing, onClaim }) => {
           
           <div className="flex items-center gap-3 text-sm text-gray-600 font-medium pt-3 border-t border-gray-100/80">
             <MapPin size={16} className="text-gray-400" />
-            <span className="truncate">{listing.distance} km away • {listing.location}</span>
+            <span className="truncate">{typeof listing.distance === 'number' ? `${listing.distance} km away` : listing.distance} • {listing.location}</span>
           </div>
         </div>
 
