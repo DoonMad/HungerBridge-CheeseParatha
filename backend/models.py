@@ -46,7 +46,8 @@ class Listing(Base):
 
     status = Column(String, default="available") # available, claimed, expired    
     claimed_by = Column(String, ForeignKey("users.id"), nullable=True)
-
+    base_time = Column(Integer, default=0) 
+    package_type = Column(String, nullable=True) 
     donor = relationship("User",foreign_keys=[donor_id], back_populates="listings")
 
     volunteer_id = Column(String, ForeignKey("users.id"), nullable=True)
