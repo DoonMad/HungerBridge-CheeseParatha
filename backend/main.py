@@ -3,17 +3,25 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine
 import models, schemas
+from routers import auth, users
 
 import os
-import joblib
 import pandas as pd
 from pydantic import BaseModel
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AI_DIR = os.path.join(BASE_DIR, "AI_Pipeline", "food_safe_time_prediction")
 
-model = joblib.load(os.path.join(AI_DIR, "spoilage_lightgbm.pkl"))
-encoders = joblib.load(os.path.join(AI_DIR, "label_encoders.pkl"))
+# Gracefully load AI model — server starts even if lightgbm/joblib aren't installed
+model = None
+encoders = None
+try:
+    import joblib
+    model = joblib.load(os.path.join(AI_DIR, "spoilage_lightgbm.pkl"))
+    encoders = joblib.load(os.path.join(AI_DIR, "label_encoders.pkl"))
+    print("✅ AI spoilage model loaded successfully.")
+except Exception as e:
+    print(f"⚠️ AI model not loaded (server will still run): {e}")
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -26,6 +34,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth.router)
+app.include_router(users.router)
 
 def get_db():
     db = SessionLocal()
@@ -74,7 +85,9 @@ def get_risk_label(minutes):
         return "HIGH"
 
 @app.post("/predict-spoilage")
-def predict_spoilage(data: SpoilageRequest):
+def predict_spoilage(data: schemas.SpoilageRequest):
+    if model is None or encoders is None:
+        raise HTTPException(status_code=503, detail="AI model not available. Install lightgbm and restart.")
     df = pd.DataFrame([data.model_dump()])
     for col, le in encoders.items():
         df[col] = le.transform(df[col])

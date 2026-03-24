@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
 import Listings from './pages/Listings';
 import VolunteerDashboard from './pages/VolunteerDashboard';
 import DonorDashboard from './pages/DonorDashboard';
@@ -18,6 +19,7 @@ function App() {
           {/* Public Routes */}
           <Route index element={<Home />} />
           <Route path="login" element={<Login />} />
+          <Route path="signup" element={<Signup />} />
           <Route path="profile" element={<PublicProfile />} />
           
           {/* Protected Area Routes (Simulated) */}

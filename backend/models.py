@@ -14,8 +14,18 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(String, primary_key=True, index=True, default=getuuid)
+    email = Column(String, unique=True, index=True)
+    hashed_password = Column(String)
     name  = Column(String, index=True)
-    role = Column(String, index=True) # donot ya ngo ya volunteer
+    role = Column(String, index=True) # comma-separated list
+
+    @property
+    def roles(self):
+        return self.role.split(',') if self.role else []
+    
+    @roles.setter
+    def roles(self, role_list):
+        self.role = ",".join(role_list) if role_list else ""
 
     joined_at = Column(DateTime, default= datetime.utcnow)
 

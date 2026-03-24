@@ -16,14 +16,20 @@ class SpoilageRequest(BaseModel):
 class UserBase(BaseModel): 
     model_config = ConfigDict(from_attributes=True)
 
-
-    id : str
+    email: str
     name: str
-    role: str
+    roles: list[str]
     latitude: Optional[float] = None
     longitude: Optional[float] = None
-
     is_active: int = 0
+
+class UserCreate(UserBase):
+    password: str
+
+class UserResponse(UserBase):
+    id: str
+    reputation_score: Optional[float] = 0.0
+
 
 
 
