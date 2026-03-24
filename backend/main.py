@@ -146,7 +146,9 @@ def predict_spoilage(data: schemas.SpoilageRequest):
                     df.loc[0, col] = le.classes_[0]
             df[col] = le.transform(df[col])
 
+    print(f"🔍 ML Input features: {df.to_dict(orient='records')[0]}")
     pred = model.predict(df)[0]
+    print(f"🔍 ML Prediction: {pred} minutes | Risk: {get_risk_label(pred)}")
 
     return {
         "predicted_safe_minutes": round(float(pred), 2),

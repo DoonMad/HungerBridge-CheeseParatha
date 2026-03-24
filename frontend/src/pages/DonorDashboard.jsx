@@ -1,18 +1,50 @@
 import { Plus, Package, Navigation, Clock } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AddListingModal from '../components/features/listings/AddListingModal';
 import { useAuth } from '../context/AuthContext';
+
+const API_URL = 'http://localhost:8000';
 
 const DonorDashboard = () => {
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeDonations, setActiveDonations] = useState([]);
 
+  // Fetch existing listings from DB on mount
+  useEffect(() => {
+    const fetchListings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/listings`);
+        if (res.ok) {
+          const listings = await res.json();
+          // Filter to only show this donor's listings
+          const myListings = listings.filter(l => l.donor_id === user?.id);
+          const mapped = myListings.map(l => {
+            const minsLeft = Math.floor((new Date(l.expires_at) - new Date()) / 60000);
+            return {
+              id: l.id,
+              food_name: l.food_name,
+              food_type: l.food_type.replace(/_/g, ' '),
+              quantity_kg: parseFloat(l.food_qty).toFixed(1),
+              safe_minutes_remaining: Math.max(0, minsLeft),
+              is_expired: minsLeft <= 0,
+              status: l.status,
+              created_at: new Date(l.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              weather_data: null,
+            };
+          });
+          setActiveDonations(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to fetch listings:", err);
+      }
+    };
+    if (user?.id) fetchListings();
+  }, [user?.id]);
+
   const handlePostDonation = async (data) => {
     try {
       // 1. Proxy coordinates completely through backend to securely fetch Weather Context
-      // This prevents React from exposing OpenWeatherMap API keys!
-      const API_URL = 'http://localhost:8000';
       const response = await fetch(`${API_URL}/api/weather-context?lat=${data.latitude}&lon=${data.longitude}`);
       
       let weatherContext = {
@@ -42,6 +74,10 @@ const DonorDashboard = () => {
       let mlData = { predicted_safe_minutes: 120, risk_level: 'MEDIUM' };
       if (mlResponse.ok) {
         mlData = await mlResponse.json();
+        console.log('🔍 ML Response:', mlData);
+      } else {
+        const mlErr = await mlResponse.text();
+        console.error('ML prediction failed:', mlResponse.status, mlErr);
       }
 
       const safe_minutes = mlData.predicted_safe_minutes;
@@ -142,7 +178,9 @@ const DonorDashboard = () => {
                 </div>
                 <div>
                   <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mb-0.5">ML Safe Window</p>
-                  <p className="font-extrabold text-gray-900">{don.safe_minutes_remaining} mins predicted</p>
+                  <p className={`font-extrabold ${don.is_expired ? 'text-red-500' : 'text-gray-900'}`}>
+                    {don.is_expired ? 'Expired' : `${don.safe_minutes_remaining} mins remaining`}
+                  </p>
                 </div>
               </div>
               

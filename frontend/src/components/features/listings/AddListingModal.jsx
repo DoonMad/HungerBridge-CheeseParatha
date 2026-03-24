@@ -52,8 +52,18 @@ const AddListingModal = ({ isOpen, onClose, onSubmit }) => {
         },
         (error) => {
           console.error("Location error:", error);
-          alert("Location API is required to fetch real-time weather metrics for the ML Engine.");
+          const reasons = {
+            1: "Location permission denied. Please allow location access in your browser settings.",
+            2: "Location unavailable. Your device couldn't determine its position.",
+            3: "Location request timed out. Please try again.",
+          };
+          alert(reasons[error.code] || "Location error. Please try again.");
           setIsClassifying(false);
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 15000,
+          maximumAge: 60000, // Accept cached location up to 1 min old
         }
       );
     } else {
