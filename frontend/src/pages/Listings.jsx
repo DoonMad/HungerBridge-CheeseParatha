@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import ListingCard from '../components/features/listings/ListingCard';
 import ClaimModal from '../components/features/claim/ClaimModal';
 import { SlidersHorizontal, Search, CheckCircle, Plus } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const API_URL = 'http://localhost:8000/api/listings';
 
 const Listings = () => {
+  const { user } = useAuth();
   const [listings, setListings] = useState([]);
   const [filter, setFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -18,21 +20,27 @@ const Listings = () => {
       const response = await fetch(API_URL);
       if (!response.ok) throw new Error();
       const data = await response.json();
-      const mapped = data.map(l => ({
-        id: l.id,
-        title: l.food_name,
-        restaurant: "Donor",
-        food_type: l.food_type,
-        isVeg: l.food_is_veg,
-        quantity_kg: l.food_qty,
-        servings: l.food_qty * 4,
-        packaging_type: 'sealed',
-        requiresRefrigeration: l.refrigeration || false,
-        time_since_cooked_min: 0,
-        distance: 1.5,
-        location: 'Local Center',
-        expiresAt: l.expires_at,
-      }));
+      
+      const mapped = data
+        .filter(l => l.status === 'available')
+        .map(l => {
+          const expiresStr = l.expires_at.endsWith('Z') ? l.expires_at : l.expires_at + 'Z';
+          return {
+            id: l.id,
+            title: l.food_name,
+            restaurant: "Donor",
+            food_type: l.food_type,
+            isVeg: l.food_is_veg,
+            quantity_kg: l.food_qty,
+            servings: l.food_qty * 4,
+            packaging_type: 'sealed',
+            requiresRefrigeration: l.refrigeration || false,
+            time_since_cooked_min: 0,
+            distance: 1.5,
+            location: 'Local Center',
+            expiresAt: expiresStr,
+          };
+      });
       setListings(mapped);
     } catch (error) {
       // Fallback Mock Data for NGO Live Feed MVP
@@ -68,9 +76,12 @@ const Listings = () => {
     setSelectedListing(listing);
   };
   
-  const handleConfirmClaim = async (id) => {
+  const handleConfirmClaim = async (id, deliveryMethod) => {
     try {
-      await fetch(`${API_URL}/${id}/claim?volunteer_id=dummy-vol-id123`, { method: 'POST' });
+      const ngoId = user?.id || 'demo-ngo';
+      const isSelfPickup = deliveryMethod === 'self';
+      
+      await fetch(`${API_URL}/${id}/ngo-claim?ngo_id=${ngoId}&self_pickup=${isSelfPickup}`, { method: 'POST' });
       setListings(prev => prev.filter(l => l.id !== id));
       setShowClaimSuccess(true);
       setTimeout(() => setShowClaimSuccess(false), 4000);

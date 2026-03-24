@@ -1,44 +1,96 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bike, Power, MapPin, Package, CheckCircle, Navigation } from 'lucide-react';
-
-const MOCK_JOBS = [
-  {
-    id: 'JOB-9481',
-    food: 'Chicken Curry & Rice Combo',
-    pickup: 'Mughal Darbar, Central Avenue',
-    pickupDistance: 1.2,
-    dropoff: 'Hope Shelter, North Block',
-    dropoffDistance: 3.4,
-    totalPay: 'Impact Points: 150',
-    status: 'available',
-    expiresIn: '25 mins'
-  },
-  {
-    id: 'JOB-9482',
-    food: 'Fresh Garden Salad',
-    pickup: 'GreenLife Catering, Westside',
-    pickupDistance: 0.8,
-    dropoff: 'Community Center, Eastside',
-    dropoffDistance: 2.1,
-    totalPay: 'Impact Points: 120',
-    status: 'available',
-    expiresIn: '1 hr 15 mins'
-  }
-];
+import { useAuth } from '../context/AuthContext';
 
 const VolunteerDashboard = () => {
+  const { user } = useAuth();
   const [isActive, setIsActive] = useState(false);
   const [activeJob, setActiveJob] = useState(null);
-  const [jobs, setJobs] = useState(MOCK_JOBS);
+  const [jobs, setJobs] = useState([]);
 
-  const handleAcceptJob = (job) => {
-    setActiveJob(job);
-    setJobs(jobs.filter(j => j.id !== job.id));
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const [availRes, activeRes] = await Promise.all([
+          fetch('http://localhost:8000/api/listings/volunteer/available'),
+          user?.id ? fetch(`http://localhost:8000/api/listings/volunteer/${user.id}`) : Promise.resolve(null)
+        ]);
+        
+        if (availRes.ok) {
+          const availData = await availRes.json();
+          setJobs(availData.map(l => {
+            const exp = l.expires_at.endsWith('Z') ? l.expires_at : l.expires_at + 'Z';
+            return {
+              id: l.id,
+              food: l.food_name,
+              pickup: 'Donor Location (Map feature coming soon)',
+              pickupDistance: 1.2,
+              dropoff: 'NGO Location (Map feature coming soon)',
+              dropoffDistance: 3.4,
+              totalPay: 'Impact Points: 150',
+              status: l.status,
+              expiresIn: Math.max(0, Math.floor((new Date(exp) - new Date()) / 60000)) + ' mins'
+            };
+          }));
+        }
+        
+        if (activeRes && activeRes.ok) {
+          const activeData = await activeRes.json();
+          const current = activeData.find(l => l.status === 'volunteer_assigned');
+          if (current) {
+            const exp = current.expires_at.endsWith('Z') ? current.expires_at : current.expires_at + 'Z';
+            setActiveJob({
+              id: current.id,
+              food: current.food_name,
+              pickup: 'Donor Location',
+              pickupDistance: 1.2,
+              dropoff: 'NGO Location',
+              dropoffDistance: 3.4,
+              totalPay: 'Impact Points: 150',
+              status: current.status,
+              expiresIn: Math.max(0, Math.floor((new Date(exp) - new Date()) / 60000)) + ' mins'
+            });
+          } else {
+             setActiveJob(null);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch jobs", e);
+      }
+    };
+    if (isActive) {
+      fetchJobs();
+      // Polling for live updates
+      const interval = setInterval(fetchJobs, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [isActive, user?.id]);
+
+  const handleAcceptJob = async (job) => {
+    try {
+      if (!user?.id) { alert("Please log in as a volunteer first."); return; }
+      const res = await fetch(`http://localhost:8000/api/listings/${job.id}/volunteer-accept?volunteer_id=${user.id}`, { method: 'POST' });
+      if (res.ok) {
+        setActiveJob(job);
+        setJobs(jobs.filter(j => j.id !== job.id));
+      } else {
+        alert("Failed to accept job. It may have been taken by someone else.");
+      }
+    } catch(e) {
+      console.error(e);
+    }
   };
 
-  const handleCompleteJob = () => {
-    alert('Delivery completed successfully! (Step 5: Ratings & Gamification coming next)');
-    setActiveJob(null);
+  const handleCompleteJob = async () => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/listings/${activeJob.id}/complete`, { method: 'POST' });
+      if (res.ok) {
+        alert('Delivery marked as complete! The NGO will verify receipt.');
+        setActiveJob(null);
+      }
+    } catch(e) {
+      console.error(e);
+    }
   };
 
   return (

@@ -75,9 +75,34 @@ def get_db():
     finally:
         db.close()
 
+def ensure_utc(listings):
+    for l in listings:
+        if l.expires_at and l.expires_at.tzinfo is None:
+            l.expires_at = l.expires_at.replace(tzinfo=timezone.utc)
+        if hasattr(l, 'created_at') and l.created_at and l.created_at.tzinfo is None:
+            l.created_at = l.created_at.replace(tzinfo=timezone.utc)
+    return listings
+
 @app.get("/api/listings", response_model=list[schemas.ListingResponse])
 def get_listings(db: Session = Depends(get_db)):
-    return db.query(models.Listing).filter(models.Listing.status == "available").all()
+    return ensure_utc(db.query(models.Listing).filter(models.Listing.status == "available").all())
+
+@app.get("/api/listings/donor/{donor_id}", response_model=list[schemas.ListingResponse])
+def get_donor_listings(donor_id: str, db: Session = Depends(get_db)):
+    return ensure_utc(db.query(models.Listing).filter(models.Listing.donor_id == donor_id).order_by(models.Listing.created_at.desc()).all())
+
+@app.get("/api/listings/ngo/{ngo_id}", response_model=list[schemas.ListingResponse])
+def get_ngo_listings(ngo_id: str, db: Session = Depends(get_db)):
+    return ensure_utc(db.query(models.Listing).filter(models.Listing.claimed_by == ngo_id).order_by(models.Listing.created_at.desc()).all())
+
+@app.get("/api/listings/volunteer/available", response_model=list[schemas.ListingResponse])
+def get_volunteer_available_listings(db: Session = Depends(get_db)):
+    # available for volunteer means the NGO has claimed it, but no volunteer accepts it yet
+    return ensure_utc(db.query(models.Listing).filter(models.Listing.status == "claimed").order_by(models.Listing.created_at.desc()).all())
+
+@app.get("/api/listings/volunteer/{volunteer_id}", response_model=list[schemas.ListingResponse])
+def get_volunteer_listings(volunteer_id: str, db: Session = Depends(get_db)):
+    return ensure_utc(db.query(models.Listing).filter(models.Listing.volunteer_id == volunteer_id).order_by(models.Listing.created_at.desc()).all())
 
 @app.post("/api/listings", response_model=schemas.ListingResponse)
 def create_listing(listing: schemas.ListingCreate, db: Session = Depends(get_db)):
@@ -99,20 +124,43 @@ def create_listing(listing: schemas.ListingCreate, db: Session = Depends(get_db)
         print(f"Error creating listing: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/listings/{listing_id}/claim")
-def claim_listing(listing_id: str, volunteer_id: str, db: Session = Depends(get_db)):
+@app.post("/api/listings/{listing_id}/ngo-claim")
+def ngo_claim_listing(listing_id: str, ngo_id: str, self_pickup: bool = False, db: Session = Depends(get_db)):
     listing = db.query(models.Listing).filter(models.Listing.id == listing_id).first()
     if not listing:
         raise HTTPException(status_code=404, detail="Listing not found")
     if listing.status != "available":
         raise HTTPException(status_code=400, detail="Listing already claimed or expired")
     
-    listing.status = "claimed"
-    listing.claimed_by = volunteer_id
+    listing.status = "completed" if self_pickup else "claimed"
+    listing.claimed_by = ngo_id
+    db.commit()
+    db.refresh(listing)
+    return {"message": "Listing claimed by NGO", "listing": listing.id}
+
+@app.post("/api/listings/{listing_id}/volunteer-accept")
+def volunteer_accept_listing(listing_id: str, volunteer_id: str, db: Session = Depends(get_db)):
+    listing = db.query(models.Listing).filter(models.Listing.id == listing_id).first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    if listing.status != "claimed":
+        raise HTTPException(status_code=400, detail="Listing is not awaiting volunteer")
+    
+    listing.status = "volunteer_assigned"
     listing.volunteer_id = volunteer_id
     db.commit()
     db.refresh(listing)
-    return {"message": "Listing claimed successfully", "listing": listing.id}
+    return {"message": "Listing accepted by volunteer", "listing": listing.id}
+
+@app.post("/api/listings/{listing_id}/complete")
+def complete_listing(listing_id: str, db: Session = Depends(get_db)):
+    listing = db.query(models.Listing).filter(models.Listing.id == listing_id).first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    
+    listing.status = "completed"
+    db.commit()
+    return {"message": "Listing marked complete", "listing": listing.id}
 
 
 

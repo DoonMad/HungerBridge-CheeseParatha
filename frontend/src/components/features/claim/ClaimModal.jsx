@@ -15,7 +15,7 @@ const ClaimModal = ({ isOpen, onClose, listing, onConfirm }) => {
     
     // Simulate backend processing
     setTimeout(() => {
-      onConfirm(listing.id);
+      onConfirm(listing.id, deliveryMethod);
       setIsConfirming(false);
       onClose();
     }, 1000);

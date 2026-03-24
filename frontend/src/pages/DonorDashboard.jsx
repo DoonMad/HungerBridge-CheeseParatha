@@ -14,13 +14,14 @@ const DonorDashboard = () => {
   useEffect(() => {
     const fetchListings = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/listings`);
+        const donorId = user?.id || 'demo-donor';
+        const res = await fetch(`${API_URL}/api/listings/donor/${donorId}`);
         if (res.ok) {
-          const listings = await res.json();
-          // Filter to only show this donor's listings
-          const myListings = listings.filter(l => l.donor_id === user?.id);
+          const myListings = await res.json();
           const mapped = myListings.map(l => {
-            const minsLeft = Math.floor((new Date(l.expires_at) - new Date()) / 60000);
+            const expiresStr = l.expires_at.endsWith('Z') ? l.expires_at : l.expires_at + 'Z';
+            const createdStr = l.created_at.endsWith('Z') ? l.created_at : l.created_at + 'Z';
+            const minsLeft = Math.floor((new Date(expiresStr) - new Date()) / 60000);
             return {
               id: l.id,
               food_name: l.food_name,
@@ -29,7 +30,7 @@ const DonorDashboard = () => {
               safe_minutes_remaining: Math.max(0, minsLeft),
               is_expired: minsLeft <= 0,
               status: l.status,
-              created_at: new Date(l.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              created_at: new Date(createdStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               weather_data: null,
             };
           });
@@ -88,7 +89,7 @@ const DonorDashboard = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          donor_id: user?.id || `user_${Math.random().toString(36).substr(2,9)}`,
+          donor_id: user?.id || 'demo-donor',
           food_name: data.food_name,
           food_desc: 'Added from ML Flow',
           food_qty: parseInt(data.quantity_kg),
@@ -107,21 +108,23 @@ const DonorDashboard = () => {
       } else {
         const errText = await listResponse.text();
         console.error("POST /api/listings failed:", listResponse.status, errText);
+        // Fallback or early return instead of crashing
       }
 
-      // Add to UI
-      const newDonation = {
-        id: dbListing ? dbListing.id : `DON-${Math.floor(Math.random() * 9000) + 1000}`,
+      // Add to local state (using fallback mapped data if DB parsing somehow failed)
+      const mappedListing = {
+        id: dbListing?.id || Math.random().toString(36).substr(2, 9),
         food_name: data.food_name,
-        food_type: data.food_type.replace(/_/g, ' '),
-        quantity_kg: parseFloat(data.quantity_kg).toFixed(1),
-        safe_minutes_remaining: Math.floor(safe_minutes),
-        status: dbListing ? dbListing.status : 'waiting_for_ngo',
+        food_type: data.food_type.replace('_', ' '),
+        quantity_kg: data.quantity_kg,
+        safe_minutes_remaining: safe_minutes,
+        is_expired: safe_minutes <= 0,
+        status: 'available',
         created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        weather_data: weatherContext 
+        weather_data: weatherContext
       };
       
-      setActiveDonations([newDonation, ...activeDonations]);
+      setActiveDonations([mappedListing, ...activeDonations]);
       setIsModalOpen(false);
     } catch (err) {
       console.error("Error communicating with backend:", err);
