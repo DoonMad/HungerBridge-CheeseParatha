@@ -52,6 +52,7 @@ class Listing(Base):
 
     volunteer_id = Column(String, ForeignKey("users.id"), nullable=True)
     volunteer = relationship("User", foreign_keys=[volunteer_id])
+    refrigeration  = Column(Boolean, default=False)
 
 class Rating(Base):
     __tablename__ = "ratings"

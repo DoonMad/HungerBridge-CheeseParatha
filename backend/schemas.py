@@ -27,6 +27,7 @@ class ListingBase(BaseModel):
     food_qty: int
     food_type: str
     food_is_veg: bool
+    refrigeration: bool = False
 
     latitude: float
     longitude: float
@@ -42,6 +43,7 @@ class ListingResponse(ListingBase):
     claimed_by: Optional[str] = None
     volunteer_id: Optional[str] = None
     created_at: datetime
+
 
 class RatingCreate(BaseModel):
     model_config = ConfigDict(from_attributes=True)
