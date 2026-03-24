@@ -3,9 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine
 import models, schemas
-from routers import auth, users
 
 import os
+import joblib
 import pandas as pd
 from pydantic import BaseModel
 import urllib.request
@@ -16,94 +16,11 @@ import google.generativeai as genai
 import json
 from dotenv import load_dotenv
 import os
-
-load_dotenv()
-
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-
-model = genai.GenerativeModel("gemini-2.5-flash")
-
-BASE_SAFE_TIME_MAP ={
-    "rice_meal": 120,
-    "biryani": 115,
-    "fried_rice": 125,
-    "dry_food_roti": 180,
-    "bread_items": 170,
-    "fried_snacks": 140,
-    "samosa_kachori": 135,
-    "curry_gravy": 100,
-    "dal": 110,
-    "paneer_dish": 95,
-    "chicken_curry": 90,
-    "fish_curry": 80,
-    "noodles": 110,
-    "pasta": 105,
-    "dairy_sweets": 60,
-    "milk_based_dessert": 55,
-    "salad_cut_fruits": 70,
-    "raw_vegetable_salad": 75,
-    "bakery_cake": 85,
-    "pizza": 95
-}
-
-def resolve_food_metadata(food_name: str):
-    """
-    Returns:
-        {
-            base_safe_time: int,
-            category: str,
-            risk_level: str
-        }
-    """
-
-    key = food_name.lower().replace(" ", "_")
-
-    if key in BASE_SAFE_TIME_MAP:
-        return {
-            "base_safe_time": BASE_SAFE_TIME_MAP[key],
-        }
-
-    prompt = f"""
-    You are a food safety assistant.
-
-    For the food item: "{food_name}"
-
-    Estimate:
-    1. Safe consumption window in minutes if kept at room temperature in India.
-
-    Respond ONLY in JSON format like:
-    {{
-        "base_safe_time": 90
-    }}
-    """
-
-    response = model.generate_content(prompt)
-
-    try:
-        text = response.text.strip()
-        json_start = text.find("{")
-        json_data = json.loads(text[json_start:])
-        return json_data
-
-    except Exception:
-        return {
-            "base_safe_time": 90
-        }
-
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AI_DIR = os.path.join(BASE_DIR, "AI_Pipeline", "food_safe_time_prediction")
 
-# Gracefully load AI model — server starts even if lightgbm/joblib aren't installed
-model = None
-encoders = None
-try:
-    import joblib
-    model = joblib.load(os.path.join(AI_DIR, "spoilage_lightgbm.pkl"))
-    encoders = joblib.load(os.path.join(AI_DIR, "label_encoders.pkl"))
-    print("✅ AI spoilage model loaded successfully.")
-except Exception as e:
-    print(f"⚠️ AI model not loaded (server will still run): {e}")
+model = joblib.load(os.path.join(AI_DIR, "spoilage_lightgbm.pkl"))
+encoders = joblib.load(os.path.join(AI_DIR, "label_encoders.pkl"))
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -116,11 +33,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# For local development, if you still hit CORS issues, use allow_origins=["*"] and allow_credentials=False
-
-app.include_router(auth.router)
-app.include_router(users.router)
 
 def get_db():
     db = SessionLocal()
@@ -182,6 +94,11 @@ def get_risk_label(minutes):
 
 @app.post("/predict-spoilage")
 def predict_spoilage(data: schemas.SpoilageRequest):
+
+    meta = resolve_food_metadata(data.food_type)
+
+    base_time = meta["base_safe_time"]
+
     df = pd.DataFrame([data.model_dump()])
 
     df["base_safe_time"] = base_time
@@ -203,6 +120,7 @@ def predict_spoilage(data: schemas.SpoilageRequest):
 
             df[col] = le.transform(df[col])
 
+   
     pred = model.predict(df)[0]
 
     return {
