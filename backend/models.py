@@ -27,13 +27,31 @@ class User(Base):
 
     is_active = Column(Integer, default=0) # 1 only for volunteer
 
-    total_claims = Column(Integer, default=0)
-    successful_pickups = Column(Integer, default=0)
 
     total_claims = Column(Integer, default=0)
-    successful_pickups = Column(Integer, default=0)
-    total_meals_donated = Column(Integer, default=0)
-    total_meals_received = Column(Integer, default=0)
+    successful_distributions = Column(Integer, default=0)
+    failed_cases = Column(Integer, default=0)
+
+   
+    total_response_time = Column(Float, default=0.0)
+    total_pickup_delay = Column(Float, default=0.0)
+
+   
+    beneficiary_rating = Column(Float, default=0.0)
+    total_ratings = Column(Integer, default=0)
+
+   
+    storage_facility_score = Column(Float, default=0.0)
+    primary_service_radius_km = Column(Float, default=5.0)
+
+   
+    last_active_at = Column(DateTime, default=datetime.utcnow)
+
+   
+    total_people_served = Column(Integer, default=0)
+
+  
+    hotspot_zone_score = Column(Float, default=0.0)
 
 
 class Listing(Base):
