@@ -18,7 +18,11 @@ def register(user_in: schemas.UserCreate, db: Session = Depends(deps.get_db)):
     user_data = user_in.model_dump()
     roles = user_data.pop("roles")
     password = user_data.pop("password")
-    
+
+    if not roles or not isinstance(roles, list):
+        raise HTTPException(status_code=400, detail="roles must be a non-empty list")
+
+    # argon2 handles passwords of any practical length, no 72-byte truncation issue.
     db_user = models.User(**user_data)
     db_user.roles = roles
     db_user.hashed_password = security.get_password_hash(password)

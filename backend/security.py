@@ -8,12 +8,15 @@ SECRET_KEY = os.getenv("SECRET_KEY", "hwgfuhsuhfsaer0q0er")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 300
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Use argon2 as the default hashing algorithm for unlimited-length passwords.
+# Keep bcrypt as fallback for existing hashes if needed.
+pwd_context = CryptContext(schemes=["argon2", "bcrypt"], deprecated="auto")
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
+    # argon2 supports arbitrary password length and is more modern than bcrypt.
     return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
