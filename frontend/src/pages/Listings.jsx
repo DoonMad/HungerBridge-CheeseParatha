@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import ListingCard from '../components/features/listings/ListingCard';
-import { SlidersHorizontal, Search, CloudRain, Sun } from 'lucide-react';
+import ClaimModal from '../components/features/claim/ClaimModal';
+import { SlidersHorizontal, Search, CheckCircle } from 'lucide-react';
 
 const MOCK_WEATHER = {
   temperature_c: 32,
@@ -78,14 +79,27 @@ const Listings = () => {
   const [listings, setListings] = useState([]);
   const [filter, setFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Claim Flow State
+  const [selectedListing, setSelectedListing] = useState(null);
+  const [showClaimSuccess, setShowClaimSuccess] = useState(false);
 
   // Simulate fetching live data from backend
   useEffect(() => {
     setListings(generateMockListings());
   }, []);
 
-  const handleClaim = (id) => {
-    alert(`Initiating flow to claim donation ${id}. Next up: Step 3!`);
+  const handleClaimClick = (listing) => {
+    setSelectedListing(listing);
+  };
+  
+  const handleConfirmClaim = (id) => {
+    // Remove listing from feed to simulate it being claimed
+    setListings(prev => prev.filter(l => l.id !== id));
+    
+    // Show success toast
+    setShowClaimSuccess(true);
+    setTimeout(() => setShowClaimSuccess(false), 4000);
   };
 
   const categories = ['All', 'Veg', 'Non-Veg', 'Need Refrigeration', 'Sealed Packaging'];
@@ -172,7 +186,7 @@ const Listings = () => {
           <ListingCard 
             key={listing.id} 
             listing={listing} 
-            onClaim={handleClaim} 
+            onClaim={() => handleClaimClick(listing)} 
           />
         ))}
       </div>
@@ -180,6 +194,24 @@ const Listings = () => {
       {getFilteredListings().length === 0 && (
         <div className="text-center py-20 bg-gray-50 rounded-3xl border border-dashed border-gray-300">
           <p className="text-gray-500 text-lg">No food donations match your current filters.</p>
+        </div>
+      )}
+
+      {/* Claim Flow Modal */}
+      <ClaimModal 
+        isOpen={!!selectedListing}
+        listing={selectedListing}
+        onClose={() => setSelectedListing(null)}
+        onConfirm={handleConfirmClaim}
+      />
+
+      {/* Success Toast */}
+      {showClaimSuccess && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
+          <div className="bg-gray-900 border border-gray-800 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 font-medium">
+            <CheckCircle className="text-emerald-400" size={20} />
+            Food claimed successfully! Check dashboard for volunteer dispatch.
+          </div>
         </div>
       )}
     </div>
