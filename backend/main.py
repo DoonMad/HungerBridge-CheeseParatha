@@ -4,6 +4,17 @@ from sqlalchemy.orm import Session
 from database import SessionLocal, engine
 import models, schemas
 
+import os
+import joblib
+import pandas as pd
+from pydantic import BaseModel
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+AI_DIR = os.path.join(BASE_DIR, "AI_Pipeline", "food_safe_time_prediction")
+
+model = joblib.load(os.path.join(AI_DIR, "spoilage_lightgbm.pkl"))
+encoders = joblib.load(os.path.join(AI_DIR, "label_encoders.pkl"))
+
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
@@ -49,3 +60,27 @@ def claim_listing(listing_id: str, volunteer_id: str, db: Session = Depends(get_
     db.commit()
     db.refresh(listing)
     return {"message": "Listing claimed successfully", "listing": listing.id}
+
+
+
+
+
+def get_risk_label(minutes):
+    if minutes > 90:
+        return "LOW"
+    elif minutes > 45:
+        return "MEDIUM"
+    else:
+        return "HIGH"
+
+@app.post("/predict-spoilage")
+def predict_spoilage(data: SpoilageRequest):
+    df = pd.DataFrame([data.model_dump()])
+    for col, le in encoders.items():
+        df[col] = le.transform(df[col])
+    pred = model.predict(df)[0]
+    return {
+        "predicted_safe_minutes": round(float(pred), 2),
+        "risk_level": get_risk_label(pred)
+    }
+

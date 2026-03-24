@@ -3,6 +3,16 @@ from datetime import datetime
 from typing import Optional
 
 
+class SpoilageRequest(BaseModel):
+    food_type: str
+    base_safe_time: float
+    temperature_c: float
+    humidity_percent: float
+    time_since_cooked_min: float
+    packaging_type: str
+    sun_exposure: str
+    quantity_kg: float
+
 class UserBase(BaseModel): 
     model_config = ConfigDict(from_attributes=True)
 
