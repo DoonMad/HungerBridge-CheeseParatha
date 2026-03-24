@@ -8,6 +8,9 @@ from routers import auth, users
 import os
 import pandas as pd
 from pydantic import BaseModel
+import urllib.request
+import json
+from datetime import datetime, timezone
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AI_DIR = os.path.join(BASE_DIR, "AI_Pipeline", "food_safe_time_prediction")
@@ -53,11 +56,23 @@ def get_listings(db: Session = Depends(get_db)):
 
 @app.post("/api/listings", response_model=schemas.ListingResponse)
 def create_listing(listing: schemas.ListingCreate, db: Session = Depends(get_db)):
-    db_listing = models.Listing(**listing.model_dump())
-    db.add(db_listing)
-    db.commit()
-    db.refresh(db_listing)
-    return db_listing
+    # Auto-create donor user if they don't exist (for mock auth flow)
+    existing_user = db.query(models.User).filter(models.User.id == listing.donor_id).first()
+    if not existing_user:
+        new_user = models.User(id=listing.donor_id, name="Donor", role="donor")
+        db.add(new_user)
+        db.commit()
+
+    try:
+        db_listing = models.Listing(**listing.model_dump())
+        db.add(db_listing)
+        db.commit()
+        db.refresh(db_listing)
+        return db_listing
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating listing: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/listings/{listing_id}/claim")
 def claim_listing(listing_id: str, volunteer_id: str, db: Session = Depends(get_db)):
@@ -92,10 +107,68 @@ def predict_spoilage(data: schemas.SpoilageRequest):
         raise HTTPException(status_code=503, detail="AI model not available. Install lightgbm and restart.")
     df = pd.DataFrame([data.model_dump()])
     for col, le in encoders.items():
-        df[col] = le.transform(df[col])
+        if col in df.columns:
+            val = df[col].iloc[0]
+            if val not in le.classes_:
+                matched = False
+                for cls in le.classes_:
+                    if str(cls).lower() == str(val).lower():
+                        df.loc[0, col] = cls
+                        matched = True
+                        break
+                if not matched:
+                    df.loc[0, col] = le.classes_[0]
+            df[col] = le.transform(df[col])
     pred = model.predict(df)[0]
     return {
         "predicted_safe_minutes": round(float(pred), 2),
         "risk_level": get_risk_label(pred)
     }
+
+def get_weather_and_sun(lat: float, lon: float):
+    # Using the standard metric API endpoint
+    api_key = os.getenv("OPENWEATHER_API_KEY")
+    url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
+    
+    try:
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req) as response:
+            data = json.loads(response.read().decode())
+            
+            temp_c = data["main"]["temp"]
+            humidity = data["main"]["humidity"]
+            clouds = data["clouds"]["all"]
+            dt = data["dt"]
+            sunrise = data["sys"]["sunrise"]
+            sunset = data["sys"]["sunset"]
+            
+            # Simple algorithmic Sun Exposure rating
+            if dt < sunrise or dt > sunset:
+                sun_exposure = "None"
+            elif clouds > 75:
+                sun_exposure = "Low"
+            elif clouds > 25:
+                sun_exposure = "Medium"
+            else:
+                sun_exposure = "High"
+                
+            return {
+                "temperature_c": temp_c,
+                "humidity_percent": humidity,
+                "sun_exposure": sun_exposure,
+                "source": "live_api"
+            }
+    except Exception as e:
+        print("Weather API error:", e)
+        # Fallback values if API key is not set
+        return {
+            "temperature_c": 25.0,
+            "humidity_percent": 60,
+            "sun_exposure": "Medium",
+            "source": "fallback"
+        }
+
+@app.get("/api/weather-context")
+def weather_context_endpoint(lat: float, lon: float):
+    return get_weather_and_sun(lat, lon)
 
