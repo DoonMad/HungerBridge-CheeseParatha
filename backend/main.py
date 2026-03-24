@@ -3,9 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine
 import models, schemas
+from routers import auth, users
 
 import os
-import joblib
 import pandas as pd
 from pydantic import BaseModel
 import urllib.request
@@ -94,8 +94,16 @@ def resolve_food_metadata(food_name: str):
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AI_DIR = os.path.join(BASE_DIR, "AI_Pipeline", "food_safe_time_prediction")
 
-model = joblib.load(os.path.join(AI_DIR, "spoilage_lightgbm.pkl"))
-encoders = joblib.load(os.path.join(AI_DIR, "label_encoders.pkl"))
+# Gracefully load AI model — server starts even if lightgbm/joblib aren't installed
+model = None
+encoders = None
+try:
+    import joblib
+    model = joblib.load(os.path.join(AI_DIR, "spoilage_lightgbm.pkl"))
+    encoders = joblib.load(os.path.join(AI_DIR, "label_encoders.pkl"))
+    print("✅ AI spoilage model loaded successfully.")
+except Exception as e:
+    print(f"⚠️ AI model not loaded (server will still run): {e}")
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -108,6 +116,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# For local development, if you still hit CORS issues, use allow_origins=["*"] and allow_credentials=False
+
+app.include_router(auth.router)
+app.include_router(users.router)
 
 def get_db():
     db = SessionLocal()
@@ -169,11 +182,6 @@ def get_risk_label(minutes):
 
 @app.post("/predict-spoilage")
 def predict_spoilage(data: schemas.SpoilageRequest):
-
-    meta = resolve_food_metadata(data.food_type)
-
-    base_time = meta["base_safe_time"]
-
     df = pd.DataFrame([data.model_dump()])
 
     df["base_safe_time"] = base_time

@@ -49,7 +49,7 @@ const VolunteerDashboard = () => {
           <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">Volunteer Portal</h1>
           <p className="text-gray-500 mt-1">Deliver food and earn impact points.</p>
         </div>
-        
+
         <div className="flex items-center gap-4 bg-gray-50 px-4 py-3 rounded-2xl border border-gray-200">
           <div className="flex flex-col">
             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Status</span>
@@ -57,7 +57,7 @@ const VolunteerDashboard = () => {
               {isActive ? 'Online & Ready' : 'Offline'}
             </span>
           </div>
-          <button 
+          <button
             onClick={() => setIsActive(!isActive)}
             className={`relative inline-flex h-10 w-16 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:ring-offset-2 ${isActive ? 'bg-emerald-500' : 'bg-gray-300'}`}
           >
@@ -68,7 +68,7 @@ const VolunteerDashboard = () => {
 
       {/* Main Content */}
       <div className="grid lg:grid-cols-3 gap-8">
-        
+
         {/* Left Col: Map / Active Job */}
         <div className="lg:col-span-2 space-y-6">
           {activeJob ? (
@@ -114,7 +114,7 @@ const VolunteerDashboard = () => {
                   </div>
                 </div>
 
-                <button 
+                <button
                   onClick={handleCompleteJob}
                   className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-bold shadow-lg shadow-emerald-500/20 active:scale-95 transition-all text-lg flex items-center justify-center gap-2"
                 >
@@ -130,8 +130,8 @@ const VolunteerDashboard = () => {
               </div>
               <h2 className="text-3xl font-extrabold text-gray-900 mb-3">No Active Delivery</h2>
               <p className="text-gray-500 text-lg max-w-sm mx-auto leading-relaxed">
-                {isActive 
-                  ? "You are online! Accept a job from the list on the right to start your delivery." 
+                {isActive
+                  ? "You are online! Accept a job from the list on the right to start your delivery."
                   : "Toggle your status to online to start receiving dispatch requests."}
               </p>
             </div>
@@ -172,7 +172,7 @@ const VolunteerDashboard = () => {
                       <span className="text-sm font-medium text-gray-600">{job.dropoff}</span>
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={() => handleAcceptJob(job)}
                     disabled={!!activeJob}
                     className="w-full py-3 bg-gray-900 text-white rounded-xl font-bold text-sm hover:bg-orange-600 shadow-md hover:shadow-orange-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed group-hover:scale-[1.02] active:scale-95"
