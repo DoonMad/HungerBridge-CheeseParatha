@@ -24,6 +24,18 @@ const AddListingModal = ({ isOpen, onClose, onSubmit }) => {
 
   if (!isOpen) return null;
 
+  const resetForm = () => {
+    setFormData({
+      food_name: '',
+      food_type: 'fried_rice',
+      quantity_kg: '',
+      time_since_cooked_min: 0,
+      packaging_type: 'sealed',
+      refrigerated: false,
+      veg_nonveg: 'veg',
+    });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsClassifying(true);
@@ -36,6 +48,7 @@ const AddListingModal = ({ isOpen, onClose, onSubmit }) => {
           const lon = position.coords.longitude;
           onSubmit({ ...formData, latitude: lat, longitude: lon });
           setIsClassifying(false);
+          resetForm();
         },
         (error) => {
           console.error("Location error:", error);
@@ -47,16 +60,6 @@ const AddListingModal = ({ isOpen, onClose, onSubmit }) => {
       alert("Geolocation is not supported by your browser.");
       setIsClassifying(false);
     }
-
-    setFormData({
-      food_name: '',
-      food_type: 'fried_rice',
-      quantity_kg: '',
-      time_since_cooked_min: 0,
-      packaging_type: 'sealed',
-      refrigerated: false,
-      veg_nonveg: 'veg',
-    });
   };
 
   return (
