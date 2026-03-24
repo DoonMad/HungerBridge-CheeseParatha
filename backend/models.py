@@ -27,6 +27,15 @@ class User(Base):
 
     is_active = Column(Integer, default=0) # 1 only for volunteer
 
+    total_claims = Column(Integer, default=0)
+    successful_pickups = Column(Integer, default=0)
+
+    total_claims = Column(Integer, default=0)
+    successful_pickups = Column(Integer, default=0)
+    total_meals_donated = Column(Integer, default=0)
+    total_meals_received = Column(Integer, default=0)
+
+
 class Listing(Base):
     __tablename__ = "listings"
 
@@ -53,6 +62,13 @@ class Listing(Base):
     volunteer_id = Column(String, ForeignKey("users.id"), nullable=True)
     volunteer = relationship("User", foreign_keys=[volunteer_id])
     refrigeration  = Column(Boolean, default=False)
+    time_since_cooking = Column(Integer, default=0) 
+
+    priority_score = Column(Float, nullable=True)
+    is_escalated = Column(Integer, default=0)
+    assigned_at = Column(DateTime, nullable=True)
+    picked_up_at = Column(DateTime, nullable=True)
+
 
 class Rating(Base):
     __tablename__ = "ratings"
