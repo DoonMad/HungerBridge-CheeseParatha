@@ -7,6 +7,12 @@ lightgbm
 fastapi
 uvicorn
 pydantic
+<<<<<<< HEAD
 python-jose[cryptography]
 passlib[argon2]
 python-dotenv
+=======
+google-genai
+langchain
+langchain-google-genai
+>>>>>>> 729c3870976a21f299dfe0fddca403d52ddcc11c

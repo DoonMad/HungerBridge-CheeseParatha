@@ -68,3 +68,5 @@ def resolve_food_metadata(food_name: str):
             "base_safe_time": 90,
             "source": "fallback"
         }
+
+print(resolve_food_metadata("cheese paratha"))
