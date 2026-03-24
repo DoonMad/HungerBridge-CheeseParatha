@@ -1,13 +1,15 @@
 import os
 import json
 from dotenv import load_dotenv
-import google.generativeai as genai
-
+from langchain_google_genai import ChatGoogleGenerativeAI   
+from langchain_core.prompts import PromptTemplate
 load_dotenv()
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
+    api_key=os.getenv("GEMINI_API_KEY")
+)
 
-model = genai.GenerativeModel("gemini-2.5-flash")
 
 BASE_SAFE_TIME_MAP = {
     "rice_meal": 120,
@@ -32,6 +34,33 @@ BASE_SAFE_TIME_MAP = {
     "pizza": 95
 }
 
+
+
+food_prompt = PromptTemplate(
+    input_variables=["food_name"],
+    template="""
+You are a food safety expert working in India.
+
+Food item: {food_name}
+
+Estimate safe consumption window (in minutes) at normal room temperature.
+
+Guidelines:
+- Dry foods last longer (120–180 min)
+- Rice meals medium (90–130 min)
+- Curry/gravy medium-low (70–110 min)
+- Dairy / sweets high risk (40–80 min)
+- Raw salad low (50–90 min)
+
+Return ONLY valid JSON.
+
+Example format:
+{{
+"base_safe_time": <number>
+}}
+"""
+    )
+
 def resolve_food_metadata(food_name: str):
 
     key = food_name.lower().replace(" ", "_")
@@ -42,28 +71,22 @@ def resolve_food_metadata(food_name: str):
             "source": "rule_base"
         }
 
-    prompt = f"""
-    You are a food safety assistant.
-
-    For the food item: "{food_name}"
-
-    Estimate safe consumption window in minutes if kept at room temperature in India.
-
-    Respond ONLY JSON:
-    {{
-        "base_safe_time": 90
-    }}
-    """
+    prompt_text = food_prompt.format(food_name=food_name)
 
     try:
-        response = model.generate_content(prompt)
-        text = response.text.strip()
-        json_start = text.find("{")
-        json_data = json.loads(text[json_start:])
-        json_data["source"] = "llm"
-        return json_data
+        response = llm.invoke(prompt_text)
 
-    except Exception:
+        text = response.content.strip()
+        text = text.replace("```json", "").replace("```", "").strip()
+
+        import json
+        data = json.loads(text)
+
+        data["source"] = "llm"
+        return data
+
+    except Exception as e:
+        print("LLM error:", e)
         return {
             "base_safe_time": 90,
             "source": "fallback"

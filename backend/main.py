@@ -7,10 +7,23 @@ from routers import auth, users
 
 import os
 import sys
+
+import joblib
+
 import pandas as pd
 from pydantic import BaseModel
 import urllib.request
 import json
+
+from datetime import datetime, timezone
+
+# Add parent directory to sys.path to import AI_Pipeline
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from AI_Pipeline.food_safe_time_prediction.llm_food_resolver import resolve_food_metadata
+import google.generativeai as genai
+import json
+
 from dotenv import load_dotenv
 
 load_dotenv()
