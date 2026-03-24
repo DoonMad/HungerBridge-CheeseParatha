@@ -1,4 +1,4 @@
-# HungerBridge
+﻿# HungerBridge
 
 ## Project Description
 
@@ -15,7 +15,7 @@ time window, minimizing waste and addressing food insecurity.
 A significant amount of food is wasted daily while many people lack
 access to proper meals. The absence of a real-time coordination system
 between food donors and distribution organizations leads to
-inefficiencies and missed opportunities to utilize surplus food before
+database inefficiencies and missed opportunities to utilize surplus food before
 it expires.
 
 ------------------------------------------------------------------------
