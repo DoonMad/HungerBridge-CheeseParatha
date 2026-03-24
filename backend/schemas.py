@@ -49,6 +49,7 @@ class ListingBase(BaseModel):
     longitude: float
     expires_at: datetime
     pickup_location: str = "Unknown Location"
+    image_url: Optional[str] = None
 
 class ListingCreate(ListingBase):
     pass
@@ -61,6 +62,7 @@ class ListingResponse(ListingBase):
     volunteer_id: Optional[str] = None
     created_at: datetime
     dropoff_location: Optional[str] = None
+    image_url: Optional[str] = None
 
 
 class RatingCreate(BaseModel):

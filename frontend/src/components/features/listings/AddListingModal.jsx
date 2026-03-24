@@ -1,4 +1,4 @@
-import { X, Activity, Package } from 'lucide-react';
+import { X, Cpu, Clock, Thermometer, ShieldCheck, MapPin, UploadCloud, Package, Activity } from 'lucide-react';
 import { useState } from 'react';
 
 const ML_FOOD_TYPES = [
@@ -19,7 +19,8 @@ const AddListingModal = ({ isOpen, onClose, onSubmit }) => {
     refrigerated: false,
     veg_nonveg: 'veg',
   });
-  
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [isClassifying, setIsClassifying] = useState(false);
 
   if (!isOpen) return null;
@@ -34,15 +35,37 @@ const AddListingModal = ({ isOpen, onClose, onSubmit }) => {
       refrigerated: false,
       veg_nonveg: 'veg',
     });
+    setImageFile(null);
+    setImagePreview(null);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsClassifying(true);
     
-    // Request permission and capture real-time geodata
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
+    const handleLocationAndUpload = async () => {
+      // 1. Upload Image (if provided)
+      let uploadedImageUrl = null;
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append('file', imageFile);
+        try {
+          const res = await fetch('http://localhost:8000/api/upload', {
+            method: 'POST',
+            body: formData,
+          });
+          if (res.ok) {
+            const data = await res.json();
+            uploadedImageUrl = data.image_url;
+          }
+        } catch (e) {
+          console.error("Image upload failed", e);
+        }
+      }
+
+      // 2. Request permission and capture real-time geodata
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
         async (position) => {
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
@@ -56,7 +79,7 @@ const AddListingModal = ({ isOpen, onClose, onSubmit }) => {
               pickup_location = [a.road, a.neighbourhood, a.suburb, a.city || a.town || a.village].filter(Boolean).join(', ') || geoData.display_name;
             }
           } catch (e) { console.warn('Reverse geocode failed, using coords', e); }
-          onSubmit({ ...formData, latitude: lat, longitude: lon, pickup_location });
+          onSubmit({ ...formData, latitude: lat, longitude: lon, pickup_location, image_url: uploadedImageUrl });
           setIsClassifying(false);
           resetForm();
         },
@@ -68,18 +91,21 @@ const AddListingModal = ({ isOpen, onClose, onSubmit }) => {
             3: "Location request timed out. Please try again.",
           };
           alert(reasons[error.code] || "Location error. Please try again.");
-          setIsClassifying(false);
-        },
-        {
-          enableHighAccuracy: false,
-          timeout: 15000,
-          maximumAge: 60000, // Accept cached location up to 1 min old
-        }
-      );
-    } else {
-      alert("Geolocation is not supported by your browser.");
-      setIsClassifying(false);
-    }
+            setIsClassifying(false);
+          },
+          {
+            enableHighAccuracy: false,
+            timeout: 15000,
+            maximumAge: 60000, // Accept cached location up to 1 min old
+          }
+        );
+      } else {
+        alert("Geolocation is not supported by your browser.");
+        setIsClassifying(false);
+      }
+    };
+    
+    handleLocationAndUpload();
   };
 
   return (
@@ -115,6 +141,34 @@ const AddListingModal = ({ isOpen, onClose, onSubmit }) => {
                 onChange={e => setFormData({...formData, food_name: e.target.value})} 
                 className="w-full bg-gray-50 border border-gray-200 px-5 py-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-medium text-gray-900 placeholder-gray-400 transition-all shadow-inner" 
               />
+            </div>
+            
+            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+              <label className="block text-sm font-extrabold text-gray-900 mb-2 uppercase tracking-wide">Food Photo (Optional)</label>
+              <div className="relative border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50 p-6 flex flex-col items-center justify-center hover:bg-orange-50 hover:border-orange-300 transition-colors cursor-pointer group">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      setImageFile(file);
+                      setImagePreview(URL.createObjectURL(file));
+                    }
+                  }}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                />
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Preview" className="h-32 rounded-xl object-cover shadow-sm mb-2" />
+                ) : (
+                  <div className="h-16 w-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-3 group-hover:scale-110 transition-transform">
+                    <UploadCloud size={28} className="text-gray-400 group-hover:text-orange-500 transition-colors" />
+                  </div>
+                )}
+                <p className="text-sm font-bold text-gray-600 group-hover:text-orange-600 transition-colors">
+                  {imagePreview ? 'Tap to change photo' : 'Tap to upload a photo'}
+                </p>
+              </div>
             </div>
 
             <div className="grid sm:grid-cols-3 gap-4">

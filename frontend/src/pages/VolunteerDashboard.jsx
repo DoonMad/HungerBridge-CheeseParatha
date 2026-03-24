@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Bike, Power, MapPin, Package, CheckCircle, Navigation } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default Leaflet icon not showing in React
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 const VolunteerDashboard = () => {
   const { user } = useAuth();
@@ -28,6 +39,8 @@ const VolunteerDashboard = () => {
               dropoff: l.dropoff_location || 'NGO Location',
               totalPay: 'Impact Points: 150',
               status: l.status,
+              lat: l.latitude,
+              lng: l.longitude,
               expiresIn: Math.max(0, Math.floor((new Date(exp) - new Date()) / 60000)) + ' mins'
             };
           }));
@@ -45,6 +58,8 @@ const VolunteerDashboard = () => {
               dropoff: current.dropoff_location || 'NGO Location',
               totalPay: 'Impact Points: 150',
               status: current.status,
+              lat: current.latitude,
+              lng: current.longitude,
               expiresIn: Math.max(0, Math.floor((new Date(exp) - new Date()) / 60000)) + ' mins'
             });
           } else {
@@ -134,6 +149,21 @@ const VolunteerDashboard = () => {
                   {activeJob.id}
                 </span>
               </div>
+              
+              <div className="relative h-64 w-full bg-gray-100 z-0 border-b border-gray-100">
+                <MapContainer center={[activeJob.lat, activeJob.lng]} zoom={15} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }}>
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <Marker position={[activeJob.lat, activeJob.lng]}>
+                    <Popup>
+                      <b>Donor Pickup Point</b><br/>{activeJob.pickup}
+                    </Popup>
+                  </Marker>
+                </MapContainer>
+              </div>
+
               <div className="p-6 md:p-8 space-y-8">
                 <div className="flex gap-5 items-start">
                   <div className="p-3 bg-orange-100 text-orange-600 rounded-2xl shrink-0 mt-1">

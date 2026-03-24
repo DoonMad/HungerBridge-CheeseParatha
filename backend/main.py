@@ -1,4 +1,7 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
+from fastapi.staticfiles import StaticFiles
+import uuid
+import shutil
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine
@@ -57,9 +60,13 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+UPLOAD_DIR = os.path.join(BASE_DIR, "backend", "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -103,6 +110,20 @@ def get_volunteer_available_listings(db: Session = Depends(get_db)):
 @app.get("/api/listings/volunteer/{volunteer_id}", response_model=list[schemas.ListingResponse])
 def get_volunteer_listings(volunteer_id: str, db: Session = Depends(get_db)):
     return ensure_utc(db.query(models.Listing).filter(models.Listing.volunteer_id == volunteer_id).order_by(models.Listing.created_at.desc()).all())
+
+@app.post("/api/upload")
+async def upload_image(file: UploadFile = File(...)):
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    ext = file.filename.split(".")[-1]
+    filename = f"{uuid.uuid4()}.{ext}"
+    file_path = os.path.join(UPLOAD_DIR, filename)
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    return {"image_url": f"/uploads/{filename}"}
 
 @app.post("/api/listings", response_model=schemas.ListingResponse)
 def create_listing(listing: schemas.ListingCreate, db: Session = Depends(get_db)):

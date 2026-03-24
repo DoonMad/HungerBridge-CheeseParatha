@@ -34,11 +34,11 @@ const Listings = () => {
             quantity_kg: l.food_qty,
             servings: l.food_qty * 4,
             packaging_type: 'sealed',
-            requiresRefrigeration: l.refrigeration || false,
             time_since_cooked_min: 0,
             distance: 'Nearby',
             location: l.pickup_location || 'Donor Location',
             expiresAt: expiresStr,
+            image_url: l.image_url,
           };
       });
       setListings(mapped);

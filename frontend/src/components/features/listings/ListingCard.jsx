@@ -14,8 +14,12 @@ const ListingCard = ({ listing, onClaim }) => {
   return (
     <div className="group bg-white border border-gray-100 rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col transform hover:-translate-y-1">
       {/* Header Image or Gradient */}
-      <div className={`h-32 relative ${listing.isVeg ? 'bg-linear-to-r from-emerald-100 to-green-50' : 'bg-linear-to-r from-orange-100 to-rose-50'}`}>
-        
+      <div 
+        className={`h-40 relative bg-cover bg-center ${!listing.image_url && (listing.isVeg ? 'bg-linear-to-r from-emerald-100 to-green-50' : 'bg-linear-to-r from-orange-100 to-rose-50')}`}
+        style={listing.image_url ? { backgroundImage: `url(http://localhost:8000${listing.image_url})` } : {}}
+      >
+        {/* Dark overlay for images to make badges pop */}
+        {listing.image_url && <div className="absolute inset-0 bg-gray-900/20" />}
         {/* Top Badges */}
         <div className="absolute top-4 left-4 flex gap-2">
           <div className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide shadow-sm flex items-center gap-1.5 backdrop-blur-md ${
