@@ -52,34 +52,34 @@ const ListingCard = ({ listing, onClaim }) => {
         </div>
 
         <div className="space-y-4 mb-6 flex-1 bg-gray-50/50 p-4 rounded-2xl border border-gray-100/50">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="flex items-center gap-3 text-sm text-gray-700 font-medium col-span-1">
+          <div className="grid grid-cols-2 gap-y-3 gap-x-2">
+            <div className="flex items-center gap-2.5 text-sm text-gray-700 font-medium">
               <div className="p-2 bg-white rounded-xl shadow-sm border border-gray-100 text-indigo-500 shrink-0">
                 <Box size={16} />
               </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Amount</span>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold truncate">Amount</span>
                 <span className="leading-tight truncate">{listing.quantity_kg} kg</span>
               </div>
             </div>
             
-            <div className="flex items-center gap-3 text-sm text-gray-700 font-medium col-span-1">
+            <div className="flex items-center gap-2.5 text-sm text-gray-700 font-medium">
               <div className="p-2 bg-white rounded-xl shadow-sm border border-gray-100 text-orange-500 shrink-0">
                 <Users size={16} />
               </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Serves</span>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold truncate">Serves</span>
                 <span className="leading-tight truncate">~{listing.servings} px</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 text-sm text-gray-700 font-medium col-span-1">
+            <div className="flex items-center gap-2.5 text-sm text-gray-700 font-medium col-span-2 pt-1">
               <div className="p-2 bg-white rounded-xl shadow-sm border border-gray-100 text-emerald-500 shrink-0">
                 <Package size={16} />
               </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Packaging</span>
-                <span className="leading-tight truncate max-w-[80px]">{formatPackaging(listing.packaging_type)}</span>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold truncate">Packaging</span>
+                <span className="leading-tight truncate">{formatPackaging(listing.packaging_type)}</span>
               </div>
             </div>
           </div>
