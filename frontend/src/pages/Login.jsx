@@ -13,6 +13,7 @@ const Login = () => {
     setTimeout(() => {
       // Create a superuser object that has access to all 3 roles
       const superUser = {
+        id: "demo-superuser-001",
         name: "SuperAdmin Tester",
         email: "demo@hungerbridge.com",
         roles: ['ngo', 'donor', 'volunteer'],

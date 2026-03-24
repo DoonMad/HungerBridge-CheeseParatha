@@ -14,6 +14,7 @@ const AddListingModal = ({ isOpen, onClose, onSubmit }) => {
     food_name: '',
     food_type: 'fried_rice',
     quantity_kg: '',
+    time_since_cooked_min: 0,
     packaging_type: 'sealed',
     refrigerated: false,
     veg_nonveg: 'veg',
@@ -26,11 +27,36 @@ const AddListingModal = ({ isOpen, onClose, onSubmit }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsClassifying(true);
-    // Simulate ML prediction pipeline delay
-    setTimeout(() => {
+    
+    // Request permission and capture real-time geodata
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          onSubmit({ ...formData, latitude: lat, longitude: lon });
+          setIsClassifying(false);
+        },
+        (error) => {
+          console.error("Location error:", error);
+          alert("Location API is required to fetch real-time weather metrics for the ML Engine.");
+          setIsClassifying(false);
+        }
+      );
+    } else {
+      alert("Geolocation is not supported by your browser.");
       setIsClassifying(false);
-      onSubmit(formData);
-    }, 1500);
+    }
+
+    setFormData({
+      food_name: '',
+      food_type: 'fried_rice',
+      quantity_kg: '',
+      time_since_cooked_min: 0,
+      packaging_type: 'sealed',
+      refrigerated: false,
+      veg_nonveg: 'veg',
+    });
   };
 
   return (
@@ -68,7 +94,7 @@ const AddListingModal = ({ isOpen, onClose, onSubmit }) => {
               />
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid sm:grid-cols-3 gap-4">
               <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
                 <label className="block text-[11px] font-extrabold text-gray-400 mb-2 uppercase tracking-widest">Exact Food Category (ML)</label>
                 <select 
@@ -92,6 +118,19 @@ const AddListingModal = ({ isOpen, onClose, onSubmit }) => {
                   placeholder="e.g. 5.5" 
                   value={formData.quantity_kg} 
                   onChange={e => setFormData({...formData, quantity_kg: e.target.value})} 
+                  className="w-full bg-gray-50 border border-gray-200 px-4 py-3.5 rounded-2xl focus:outline-none focus:border-orange-500 font-bold text-gray-700 shadow-inner" 
+                />
+              </div>
+
+              <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
+                <label className="block text-[11px] font-extrabold text-gray-400 mb-2 uppercase tracking-widest whitespace-nowrap">Mins Since Cooked</label>
+                <input 
+                  required 
+                  type="number" 
+                  min="0" 
+                  placeholder="0" 
+                  value={formData.time_since_cooked_min} 
+                  onChange={e => setFormData({...formData, time_since_cooked_min: parseInt(e.target.value) || 0})} 
                   className="w-full bg-gray-50 border border-gray-200 px-4 py-3.5 rounded-2xl focus:outline-none focus:border-orange-500 font-bold text-gray-700 shadow-inner" 
                 />
               </div>
