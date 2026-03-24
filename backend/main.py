@@ -3,24 +3,42 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine
 import models, schemas
+from routers import auth, users
 
 import os
-import joblib
+import sys
 import pandas as pd
 from pydantic import BaseModel
 import urllib.request
 import json
-from datetime import datetime, timezone
-from AI_Pipeline.food_safe_time_prediction.llm_food_resolver import resolve_food_metadata
-import google.generativeai as genai
-import json
 from dotenv import load_dotenv
-import os
+
+load_dotenv()
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AI_DIR = os.path.join(BASE_DIR, "AI_Pipeline", "food_safe_time_prediction")
 
-model = joblib.load(os.path.join(AI_DIR, "spoilage_lightgbm.pkl"))
-encoders = joblib.load(os.path.join(AI_DIR, "label_encoders.pkl"))
+# Add AI_Pipeline parent to python path so we can import from it
+sys.path.insert(0, BASE_DIR)
+
+# Gracefully load AI model and LLM resolver
+model = None
+encoders = None
+resolve_food_metadata = None
+try:
+    import joblib
+    model = joblib.load(os.path.join(AI_DIR, "spoilage_lightgbm.pkl"))
+    encoders = joblib.load(os.path.join(AI_DIR, "label_encoders.pkl"))
+    print("✅ AI spoilage model loaded successfully.")
+except Exception as e:
+    print(f"⚠️ AI model not loaded (server will still run): {e}")
+
+try:
+    from AI_Pipeline.food_safe_time_prediction.llm_food_resolver import resolve_food_metadata
+    print("✅ LLM food resolver loaded successfully.")
+except Exception as e:
+    print(f"⚠️ LLM food resolver not available: {e}")
+
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -33,6 +51,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth.router)
+app.include_router(users.router)
 
 def get_db():
     db = SessionLocal()
@@ -94,19 +115,26 @@ def get_risk_label(minutes):
 
 @app.post("/predict-spoilage")
 def predict_spoilage(data: schemas.SpoilageRequest):
+    if model is None or encoders is None:
+        raise HTTPException(status_code=503, detail="AI model not available. Install lightgbm and restart.")
 
-    meta = resolve_food_metadata(data.food_type)
-
-    base_time = meta["base_safe_time"]
+    # Use LLM resolver if available, otherwise use the base_safe_time from the request
+    base_time = data.base_safe_time
+    meta_source = "request_default"
+    if resolve_food_metadata is not None:
+        try:
+            meta = resolve_food_metadata(data.food_type)
+            base_time = meta["base_safe_time"]
+            meta_source = meta.get("source", "llm")
+        except Exception as e:
+            print(f"LLM resolver failed, using default base_safe_time: {e}")
 
     df = pd.DataFrame([data.model_dump()])
-
     df["base_safe_time"] = base_time
 
     for col, le in encoders.items():
         if col in df.columns:
             val = df[col].iloc[0]
-
             if val not in le.classes_:
                 matched = False
                 for cls in le.classes_:
@@ -114,20 +142,17 @@ def predict_spoilage(data: schemas.SpoilageRequest):
                         df.loc[0, col] = cls
                         matched = True
                         break
-
                 if not matched:
                     df.loc[0, col] = le.classes_[0]
-
             df[col] = le.transform(df[col])
 
-   
     pred = model.predict(df)[0]
 
     return {
         "predicted_safe_minutes": round(float(pred), 2),
         "risk_level": get_risk_label(pred),
         "base_time_used": base_time,
-        "base_time_source": meta["source"]
+        "base_time_source": meta_source
     }
 
 def get_weather_and_sun(lat: float, lon: float):
