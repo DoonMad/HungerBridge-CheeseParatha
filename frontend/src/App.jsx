@@ -7,11 +7,13 @@ import VolunteerDashboard from './pages/VolunteerDashboard';
 import DonorDashboard from './pages/DonorDashboard';
 import NGODashboard from './pages/NGODashboard';
 import PublicProfile from './pages/PublicProfile';
+import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
     <Router>
-      <Routes>
+      <AuthProvider>
+        <Routes>
         <Route path="/" element={<MainLayout />}>
           {/* Public Routes */}
           <Route index element={<Home />} />
@@ -25,6 +27,7 @@ function App() {
           <Route path="volunteer/dispatch" element={<VolunteerDashboard />} />
         </Route>
       </Routes>
+      </AuthProvider>
     </Router>
   );
 }
