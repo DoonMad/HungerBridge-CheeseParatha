@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from database import Base 
-from sqlalchemy import Column, Integer, String , Float, ForeignKey, DateTime, Text
+from sqlalchemy import Column, Integer, String , Float, ForeignKey, DateTime, Text, Boolean
 from sqlalchemy.orm import relationship
 
 from datetime import datetime
@@ -37,7 +37,8 @@ class Listing(Base):
     food_name = Column(String, nullable=False)
     food_desc = Column(String, nullable=True)
     food_qty = Column(Integer, nullable=False)
-
+    food_type = Column(String, nullable=False) 
+    food_is_veg = Column(Boolean, nullable=False)
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
     created_at = Column(DateTime, default= datetime.utcnow)
